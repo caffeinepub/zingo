@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 1.25rem;
+
+    /* Zingo Design Tokens - Bright Premium Casual */
+    /* Background: lavender to sky blue gradient handled via class */
+    --background: 0.97 0.015 280;
+    --foreground: 0.22 0.04 280;
+
+    /* Cards: pure white */
+    --card: 1 0 0;
+    --card-foreground: 0.22 0.04 280;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.22 0.04 280;
+
+    /* Primary: vibrant purple */
+    --primary: 0.52 0.22 290;
+    --primary-foreground: 1 0 0;
+
+    /* Secondary: coral pink */
+    --secondary: 0.65 0.22 15;
+    --secondary-foreground: 1 0 0;
+
+    /* Muted: soft lavender */
+    --muted: 0.93 0.02 280;
+    --muted-foreground: 0.52 0.04 280;
+
+    /* Accent: warm yellow/gold for coins */
+    --accent: 0.82 0.18 80;
+    --accent-foreground: 0.22 0.04 280;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 1 0 0;
+
+    --border: 0.9 0.02 280;
+    --input: 0.9 0.02 280;
+    --ring: 0.52 0.22 290;
+
+    /* Chart colors */
+    --chart-1: 0.52 0.22 290;
+    --chart-2: 0.65 0.22 15;
+    --chart-3: 0.82 0.18 80;
+    --chart-4: 0.6 0.18 160;
+    --chart-5: 0.7 0.15 220;
+
+    /* Success */
+    --success: 0.62 0.19 145;
+    --success-foreground: 1 0 0;
+
+    /* Warning */
+    --warning: 0.82 0.18 80;
+    --warning-foreground: 0.22 0.04 280;
+
+    /* Sidebar */
+    --sidebar: 1 0 0;
+    --sidebar-foreground: 0.22 0.04 280;
+    --sidebar-primary: 0.52 0.22 290;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.93 0.02 280;
+    --sidebar-accent-foreground: 0.22 0.04 280;
+    --sidebar-border: 0.9 0.02 280;
+    --sidebar-ring: 0.52 0.22 290;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
+/* Zingo App Gradient Background */
+.zingo-bg {
+  background: linear-gradient(135deg, #e9d5ff 0%, #bae6fd 100%);
+  min-height: 100vh;
+}
+
+/* Confetti Animation */
+@keyframes floatUp {
+  0% {
+    transform: translateY(100vh) rotate(0deg) scale(0.5);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-20vh) rotate(720deg) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes floatSway {
+  0% {
+    transform: translateY(100vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  50% { transform: translateY(40vh) translateX(30px) rotate(180deg); }
+  90% { opacity: 0.7; }
+  100% {
+    transform: translateY(-10vh) translateX(-20px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.confetti-dot {
+  position: absolute;
+  border-radius: 50%;
+  animation: floatSway linear infinite;
+  pointer-events: none;
+}
+
+/* Coin pulse animation */
+@keyframes coinPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.coin-pulse {
+  animation: coinPulse 0.4s ease-in-out;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Slide in from bottom */
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+  animation: slideInBottom 0.35s ease-out forwards;
+}
+
+/* Stagger children */
+.stagger-child:nth-child(1) { animation-delay: 0.05s; }
+.stagger-child:nth-child(2) { animation-delay: 0.1s; }
+.stagger-child:nth-child(3) { animation-delay: 0.15s; }
+.stagger-child:nth-child(4) { animation-delay: 0.2s; }
+.stagger-child:nth-child(5) { animation-delay: 0.25s; }
+.stagger-child:nth-child(6) { animation-delay: 0.3s; }
+
+/* XP Progress bar animation */
+@keyframes fillBar {
+  from { width: 0%; }
+  to { width: var(--fill-pct); }
+}
+
+/* Spinning wheel */
+@keyframes spinWheel {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(var(--spin-deg)); }
+}
+
+.wheel-spinning {
+  animation: spinWheel 3s cubic-bezier(0.17, 0.67, 0.12, 0.99) forwards;
+}
+
+/* Screen transition */
+@keyframes screenEnter {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.screen-enter {
+  animation: screenEnter 0.3s ease-out forwards;
+}
+
+/* Letter tile bounce */
+@keyframes tileSelect {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.88); }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.tile-selected {
+  animation: tileSelect 0.2s ease-out;
+}
+
+/* Timer urgent pulse */
+@keyframes urgentPulse {
+  0%, 100% { color: oklch(0.65 0.22 15); transform: scale(1); }
+  50% { color: oklch(0.52 0.22 290); transform: scale(1.05); }
+}
+
+.timer-urgent {
+  animation: urgentPulse 0.6s ease-in-out infinite;
+}
+
+/* Zingo card hover */
+.game-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-card:active {
+  transform: scale(0.95);
+}
+
+/* Reward popup */
+@keyframes popIn {
+  0% { transform: scale(0.7); opacity: 0; }
+  70% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pop-in {
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0.06 280);
+  border-radius: 2px;
+}
