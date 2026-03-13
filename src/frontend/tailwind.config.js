@@ -15,6 +15,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Outfit", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "oklch(var(--border))",
         input: "oklch(var(--input))",
@@ -66,7 +69,6 @@ export default {
           border: "oklch(var(--sidebar-border))",
           ring: "oklch(var(--sidebar-ring))",
         },
-        /* Zingo semantic extras */
         success: {
           DEFAULT: "oklch(var(--success))",
           foreground: "oklch(var(--success-foreground))",
@@ -75,16 +77,16 @@ export default {
           DEFAULT: "oklch(var(--warning))",
           foreground: "oklch(var(--warning-foreground))",
         },
-        /* Direct palette references for Zingo UI */
+        /* Zingo neumorphic palette */
         zingo: {
-          purple: "oklch(0.52 0.22 290)",
-          "purple-light": "oklch(0.72 0.14 290)",
-          "purple-soft": "oklch(0.92 0.04 290)",
-          coral: "oklch(0.65 0.22 15)",
-          "coral-light": "oklch(0.82 0.12 15)",
-          gold: "oklch(0.82 0.18 80)",
-          green: "oklch(0.62 0.19 145)",
-          blue: "oklch(0.72 0.12 220)",
+          navy: "#0d1b2a",
+          "navy-light": "#162233",
+          "navy-mid": "#1e2d3d",
+          charcoal: "#1a2840",
+          cyan: "#00e5ff",
+          "cyan-dim": "rgba(0,229,255,0.15)",
+          "text-primary": "#e2eaf4",
+          "text-muted": "#5a7490",
         },
       },
       borderRadius: {
@@ -97,10 +99,14 @@ export default {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
-        card: "0 4px 16px rgba(124, 58, 237, 0.08), 0 1px 4px rgba(0,0,0,0.06)",
-        "card-hover": "0 8px 24px rgba(124, 58, 237, 0.14), 0 2px 8px rgba(0,0,0,0.08)",
-        modal: "0 20px 60px rgba(124, 58, 237, 0.18), 0 4px 16px rgba(0,0,0,0.1)",
-        "inner-soft": "inset 0 2px 8px rgba(124, 58, 237, 0.1)",
+        "nm-raised": "4px 4px 10px #070e17, -3px -3px 8px #203247",
+        "nm-raised-lg": "6px 6px 16px #070e17, -4px -4px 12px #1e3049",
+        "nm-pressed": "inset 3px 3px 8px #070e17, inset -2px -2px 6px #203247",
+        "nm-glow": "4px 4px 10px #070e17, -3px -3px 8px #203247, 0 0 14px rgba(0,229,255,0.35)",
+        card: "4px 4px 10px #070e17, -3px -3px 8px #203247",
+        "card-hover": "6px 6px 16px #070e17, -4px -4px 12px #1e3049, 0 0 10px rgba(0,229,255,0.2)",
+        modal: "0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(0,229,255,0.1)",
+        "inner-soft": "inset 2px 2px 5px #080f18, inset -1px -1px 4px #1d2e40",
       },
       keyframes: {
         "accordion-down": {

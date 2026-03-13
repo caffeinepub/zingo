@@ -49,42 +49,42 @@ export function HomeScreen() {
       id: "quiz",
       icon: "🧠",
       title: t.quiz,
-      color: "#8B5CF6",
+      color: "#00e5ff",
       ocid: "game_card.quiz.button",
     },
     {
       id: "gk",
       icon: "🌍",
       title: t.generalKnowledge,
-      color: "#06B6D4",
+      color: "#00e5ff",
       ocid: "game_card.gk.button",
     },
     {
       id: "wordConnect",
       icon: "🔤",
       title: t.wordConnect,
-      color: "#10B981",
+      color: "#00e5ff",
       ocid: "game_card.word_connect.button",
     },
     {
       id: "wordSearch",
       icon: "🔍",
       title: t.wordSearch,
-      color: "#F59E0B",
+      color: "#00e5ff",
       ocid: "game_card.word_search.button",
     },
     {
       id: "speedChallenge",
       icon: "⚡",
       title: t.speedChallenge,
-      color: "#EF4444",
+      color: "#00e5ff",
       ocid: "game_card.speed_challenge.button",
     },
     {
       id: "spinWin",
       icon: "🎰",
       title: t.spinWin,
-      color: "#EC4899",
+      color: "#00e5ff",
       ocid: "game_card.spin_win.button",
     },
   ] as const;
@@ -101,7 +101,10 @@ export function HomeScreen() {
 
       {/* Games Grid */}
       <div>
-        <h2 className="text-sm font-bold text-foreground/70 uppercase tracking-widest mb-3 px-1">
+        <h2
+          className="text-xs font-bold uppercase tracking-widest mb-3 px-1"
+          style={{ color: "#5a7490" }}
+        >
           🎮 Games
         </h2>
         <div className="grid grid-cols-2 gap-3">
@@ -110,7 +113,9 @@ export function HomeScreen() {
               key={game.id}
               icon={game.icon}
               title={game.title}
-              onClick={() => navigate(game.id as any)}
+              onClick={() =>
+                navigate(game.id as Parameters<typeof navigate>[0])
+              }
               data-ocid={game.ocid}
               color={game.color}
             />
@@ -126,7 +131,7 @@ export function HomeScreen() {
           subtitle="3 missions today"
           onClick={() => navigate("dailyChallenges")}
           data-ocid="home.challenges_button"
-          color="#8B5CF6"
+          color="#00e5ff"
           wide
         />
         <GameCard
@@ -135,7 +140,7 @@ export function HomeScreen() {
           subtitle="See top players"
           onClick={() => navigate("leaderboard")}
           data-ocid="home.leaderboard_button"
-          color="#F59E0B"
+          color="#00e5ff"
           wide
         />
       </div>
@@ -147,7 +152,7 @@ export function HomeScreen() {
       {showRewardModal && (
         <div
           className="fixed inset-0 z-40 flex items-end justify-center"
-          style={{ background: "rgba(0,0,0,0.45)" }}
+          style={{ background: "rgba(0,0,0,0.75)" }}
           onClick={(e) => {
             if (e.target === e.currentTarget && rewardClaimed) {
               setShowRewardModal(false);
@@ -159,18 +164,26 @@ export function HomeScreen() {
         >
           <div
             data-ocid="daily_reward.modal"
-            className="bg-white rounded-t-3xl w-full max-w-md p-6 pb-8 slide-in"
+            className="w-full max-w-md p-6 pb-8 slide-in rounded-t-3xl"
+            style={{
+              background: "#162233",
+              boxShadow:
+                "0 -8px 40px rgba(0,0,0,0.6), 0 0 30px rgba(0,229,255,0.08)",
+            }}
           >
-            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-5" />
+            {/* Drag handle */}
+            <div
+              className="w-12 h-1.5 rounded-full mx-auto mb-5"
+              style={{ background: "#2a3d52" }}
+            />
 
             <div className="text-center mb-5">
               <div className="text-4xl mb-2">🎁</div>
-              <h3 className="text-xl font-black text-foreground">
+              <h3 className="text-xl font-black" style={{ color: "#e2eaf4" }}>
                 {t.dailyReward}
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {currentStreak} {language === "en" ? "day streak" : "ದಿನದ ಸತತತೆ"}{" "}
-                🔥
+              <p className="text-sm mt-1" style={{ color: "#5a7490" }}>
+                {currentStreak} {t.dayStreak} 🔥
               </p>
             </div>
 
@@ -179,22 +192,26 @@ export function HomeScreen() {
               {streakDays.map((day) => (
                 <div
                   key={day}
-                  className={`w-10 h-10 rounded-2xl flex flex-col items-center justify-center text-xs font-bold transition-all ${
-                    day <= currentStreak
-                      ? "text-white shadow-sm"
-                      : "bg-gray-100 text-gray-400"
-                  }`}
+                  className="w-10 h-10 rounded-2xl flex flex-col items-center justify-center text-xs font-bold transition-all"
                   style={
                     day <= currentStreak
                       ? {
                           background:
-                            "linear-gradient(135deg, #8B5CF6, #6366F1)",
+                            "linear-gradient(135deg, rgba(0,229,255,0.2), rgba(0,229,255,0.35))",
+                          border: "1px solid rgba(0,229,255,0.5)",
+                          color: "#00e5ff",
+                          boxShadow: "0 0 12px rgba(0,229,255,0.2)",
                         }
-                      : {}
+                      : {
+                          background: "#0d1b2a",
+                          boxShadow:
+                            "inset 2px 2px 5px #080f18, inset -1px -1px 4px #1d2e40",
+                          color: "#5a7490",
+                        }
                   }
                 >
                   <span className="text-[10px] leading-none">
-                    {language === "en" ? "D" : "ದಿ"}
+                    {t.day.charAt(0)}
                   </span>
                   <span>{day}</span>
                 </div>
@@ -203,18 +220,30 @@ export function HomeScreen() {
 
             {rewardClaimed ? (
               <div className="text-center">
-                <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-4">
+                <div
+                  className="rounded-2xl p-4 mb-4"
+                  style={{
+                    background: "rgba(0,229,255,0.06)",
+                    border: "1px solid rgba(0,229,255,0.2)",
+                    boxShadow: "inset 2px 2px 8px rgba(0,0,0,0.3)",
+                  }}
+                >
                   <div className="text-2xl mb-1">🎉</div>
-                  <p className="font-bold text-green-700">
-                    +{rewardCoins} {t.coins}{" "}
-                    {language === "en" ? "earned!" : "ಗಳಿಸಿದ್ದೀರಿ!"}
+                  <p className="font-bold" style={{ color: "#00e5ff" }}>
+                    +{rewardCoins} {t.coins} {t.claimed}
                   </p>
                 </div>
                 <button
                   type="button"
                   data-ocid="daily_reward.close_button"
                   onClick={() => setShowRewardModal(false)}
-                  className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-2xl active:scale-95 transition-transform"
+                  className="w-full py-3.5 font-bold rounded-2xl active:scale-95 transition-transform text-sm"
+                  style={{
+                    background: "#1e2d3d",
+                    color: "#00e5ff",
+                    boxShadow: "4px 4px 10px #070e17, -3px -3px 8px #203247",
+                    border: "1px solid rgba(0,229,255,0.2)",
+                  }}
                 >
                   {t.continue}
                 </button>
@@ -224,9 +253,12 @@ export function HomeScreen() {
                 type="button"
                 data-ocid="daily_reward.confirm_button"
                 onClick={handleClaimReward}
-                className="w-full py-3.5 font-bold text-white rounded-2xl active:scale-95 transition-transform text-lg shadow-card"
+                className="w-full py-3.5 font-bold rounded-2xl active:scale-95 transition-transform text-lg"
                 style={{
-                  background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
+                  background: "linear-gradient(135deg, #00b8d4, #00e5ff)",
+                  color: "#0d1b2a",
+                  boxShadow:
+                    "4px 4px 12px #070e17, -3px -3px 8px #203247, 0 0 20px rgba(0,229,255,0.3)",
                 }}
               >
                 🎁 {t.claimReward}
@@ -242,7 +274,8 @@ export function HomeScreen() {
           href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+          className="text-xs transition-colors"
+          style={{ color: "#2a3d52" }}
         >
           © {new Date().getFullYear()}. Built with ❤️ using caffeine.ai
         </a>

@@ -1,8 +1,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGame } from "../context/GameContext";
+import type { QuizQuestion } from "../data/quizQuestions";
 import { quizQuestions } from "../data/quizQuestions";
+import type { Lang } from "../data/translations";
 import { translations } from "../data/translations";
 import { backend } from "../services/backendService";
+
+function getLangField(
+  q: Pick<
+    QuizQuestion,
+    "questionEn" | "questionKn" | "questionHi" | "questionTe" | "questionTa"
+  >,
+  lang: Lang,
+): string {
+  switch (lang) {
+    case "kn":
+      return q.questionKn;
+    case "hi":
+      return q.questionHi;
+    case "te":
+      return q.questionTe;
+    case "ta":
+      return q.questionTa;
+    default:
+      return q.questionEn;
+  }
+}
+
+function getOptionText(
+  opt: { en: string; kn: string; hi: string; te: string; ta: string },
+  lang: Lang,
+): string {
+  return opt[lang] ?? opt.en;
+}
 
 type SpeedPhase = "ready" | "playing" | "result";
 
@@ -184,9 +214,15 @@ export function SpeedChallengeGame() {
             {t.speedChallenge}
           </h2>
           <p className="text-muted-foreground text-sm">
-            {language === "en"
-              ? "Answer as many questions as possible in 60 seconds!"
-              : "60 ಸೆಕೆಂಡ್‌ನಲ್ಲಿ ಎಷ್ಟು ಸಾಧ್ಯವೋ ಅಷ್ಟು ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ!"}
+            {language === "kn"
+              ? "60 ಸೆಕೆಂಡ್‌ನಲ್ಲಿ ಎಷ್ಟು ಸಾಧ್ಯವೋ ಅಷ್ಟು ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ!"
+              : language === "hi"
+                ? "60 सेकंड में जितना हो सके उतने सवालों के जवाब दें!"
+                : language === "te"
+                  ? "60 సెకండ్లలో వీలైనన్ని ప్రశ్నలకు సమాధానం ఇవ్వండి!"
+                  : language === "ta"
+                    ? "60 விநாடிகளில் முடிந்தவரை கேள்விகளுக்கு பதிலளிக்கவும்!"
+                    : "Answer as many questions as possible in 60 seconds!"}
           </p>
         </div>
 
@@ -199,7 +235,15 @@ export function SpeedChallengeGame() {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              {language === "en" ? "Per correct answer" : "ಪ್ರತಿ ಸರಿ ಉತ್ತರ"}
+              {language === "kn"
+                ? "ಪ್ರತಿ ಸರಿ ಉತ್ತರ"
+                : language === "hi"
+                  ? "प्रत्येक सही उत्तर"
+                  : language === "te"
+                    ? "ప్రతి సరైన సమాధానం"
+                    : language === "ta"
+                      ? "ஒவ்வொரு சரியான பதிலுக்கும்"
+                      : "Per correct answer"}
             </span>
             <span className="font-bold text-amber-600">🪙 +5, ✨ +8 XP</span>
           </div>
@@ -240,7 +284,15 @@ export function SpeedChallengeGame() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">
-              {language === "en" ? "Best Streak" : "ಅತ್ಯುತ್ತಮ ಸತತತೆ"}
+              {language === "kn"
+                ? "ಅತ್ಯುತ್ತಮ ಸತತತೆ"
+                : language === "hi"
+                  ? "सर्वश्रेष्ठ लकीर"
+                  : language === "te"
+                    ? "అత్యుత్తమ వరుస"
+                    : language === "ta"
+                      ? "சிறந்த தொடர்ச்சி"
+                      : "Best Streak"}
             </span>
             <span className="font-bold">🔥 {maxStreak}</span>
           </div>
@@ -314,7 +366,7 @@ export function SpeedChallengeGame() {
       {/* Question */}
       <div className="bg-white rounded-3xl shadow-card p-5">
         <p className="text-base font-bold text-foreground leading-relaxed">
-          {language === "kn" ? question.questionKn : question.questionEn}
+          {getLangField(question, language)}
         </p>
       </div>
 
@@ -346,7 +398,7 @@ export function SpeedChallengeGame() {
               <span className="block text-[10px] text-muted-foreground mb-1">
                 {["A", "B", "C", "D"][idx]}
               </span>
-              {language === "kn" ? opt.kn : opt.en}
+              {getOptionText(opt, language)}
             </button>
           );
         })}

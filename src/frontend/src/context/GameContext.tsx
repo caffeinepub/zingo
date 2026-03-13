@@ -101,7 +101,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           setWeeklyXP(Number(profile.weeklyXP));
           setLastSpinDate(Number(profile.lastSpinDate));
           setGamesPlayedCount(Number(profile.gamesPlayed));
-          if (profile.language === "kn" || profile.language === "en") {
+          if (["en", "kn", "hi", "te", "ta"].includes(profile.language)) {
             setLang(profile.language as Lang);
           }
         }

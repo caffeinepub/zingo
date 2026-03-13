@@ -27,7 +27,30 @@ const RANK_ICONS: Record<string, string> = {
   Beginner: "🌱",
 };
 
-const POSITION_COLORS = ["#F59E0B", "#9CA3AF", "#B45309"];
+// Neumorphic podium colors: gold, silver, bronze in navy theme
+const PODIUM_STYLES = [
+  {
+    bg: "linear-gradient(135deg, rgba(0,229,255,0.25), rgba(0,229,255,0.1))",
+    border: "rgba(0,229,255,0.4)",
+    text: "#00e5ff",
+    minH: 100,
+    glow: "0 0 20px rgba(0,229,255,0.2)",
+  },
+  {
+    bg: "linear-gradient(135deg, rgba(0,229,255,0.12), rgba(0,229,255,0.05))",
+    border: "rgba(0,229,255,0.25)",
+    text: "#7fd8e8",
+    minH: 80,
+    glow: "none",
+  },
+  {
+    bg: "linear-gradient(135deg, rgba(0,180,200,0.15), rgba(0,180,200,0.06))",
+    border: "rgba(0,180,200,0.25)",
+    text: "#5ab8cc",
+    minH: 64,
+    glow: "none",
+  },
+];
 
 export function LeaderboardScreen() {
   const { navigate, language, xp, rank } = useGame();
@@ -66,6 +89,12 @@ export function LeaderboardScreen() {
     };
   }, []);
 
+  const podiumOrder =
+    entries.length >= 3 ? [entries[1], entries[0], entries[2]] : [];
+  const podiumStyles = [PODIUM_STYLES[1], PODIUM_STYLES[0], PODIUM_STYLES[2]];
+  const podiumMedals = ["🥈", "🥇", "🥉"];
+  const podiumIndexes = [1, 0, 2];
+
   return (
     <div
       data-ocid="leaderboard.screen"
@@ -76,11 +105,16 @@ export function LeaderboardScreen() {
         <button
           type="button"
           onClick={() => navigate("home")}
-          className="w-10 h-10 rounded-2xl bg-white shadow-card flex items-center justify-center text-lg active:scale-90"
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg active:scale-90 transition-transform"
+          style={{
+            background: "#162233",
+            boxShadow: "4px 4px 10px #070e17, -3px -3px 8px #203247",
+            color: "#e2eaf4",
+          }}
         >
           ←
         </button>
-        <h1 className="text-lg font-black text-foreground">
+        <h1 className="text-lg font-black" style={{ color: "#e2eaf4" }}>
           {t.weeklyLeaderboard}
         </h1>
         <div className="w-10" />
@@ -89,71 +123,46 @@ export function LeaderboardScreen() {
       {/* Top 3 podium */}
       {!loading && entries.length >= 3 && (
         <div className="flex items-end justify-center gap-2 py-4">
-          {/* 2nd */}
-          <div className="flex flex-col items-center gap-1 flex-1">
-            <div className="text-2xl">🥈</div>
-            <div
-              className="w-full rounded-t-2xl flex flex-col items-center py-3 px-2"
-              style={{
-                background: "linear-gradient(135deg, #E5E7EB, #D1D5DB)",
-                minHeight: 80,
-              }}
-            >
-              <div className="text-xl">
-                {RANK_ICONS[entries[1]?.rank] || "🎮"}
+          {podiumOrder.map((entry, i) => {
+            if (!entry) return null;
+            const style = podiumStyles[i];
+            return (
+              <div
+                key={podiumIndexes[i]}
+                className="flex flex-col items-center gap-1 flex-1"
+              >
+                <div className="text-2xl">{podiumMedals[i]}</div>
+                <div
+                  className="w-full rounded-t-2xl flex flex-col items-center py-3 px-2"
+                  style={{
+                    background: style.bg,
+                    border: `1px solid ${style.border}`,
+                    minHeight: style.minH,
+                    boxShadow:
+                      style.glow !== "none"
+                        ? `4px 4px 10px #070e17, -3px -3px 8px #203247, ${style.glow}`
+                        : "4px 4px 10px #070e17, -3px -3px 8px #203247",
+                  }}
+                >
+                  <div className="text-xl">
+                    {RANK_ICONS[entry.rank] || "🎮"}
+                  </div>
+                  <p
+                    className="text-[10px] font-bold text-center break-all"
+                    style={{ color: style.text }}
+                  >
+                    {truncatePrincipal(entry.principal)}
+                  </p>
+                  <p
+                    className="text-xs font-black"
+                    style={{ color: style.text }}
+                  >
+                    {entry.xp} XP
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] font-bold text-gray-700 text-center break-all">
-                {truncatePrincipal(entries[1]?.principal || "")}
-              </p>
-              <p className="text-xs font-black text-gray-600">
-                {entries[1]?.xp} XP
-              </p>
-            </div>
-          </div>
-
-          {/* 1st */}
-          <div className="flex flex-col items-center gap-1 flex-1">
-            <div className="text-3xl">🥇</div>
-            <div
-              className="w-full rounded-t-2xl flex flex-col items-center py-3 px-2"
-              style={{
-                background: "linear-gradient(135deg, #F59E0B, #D97706)",
-                minHeight: 100,
-              }}
-            >
-              <div className="text-2xl">
-                {RANK_ICONS[entries[0]?.rank] || "🏆"}
-              </div>
-              <p className="text-[10px] font-bold text-white text-center break-all">
-                {truncatePrincipal(entries[0]?.principal || "")}
-              </p>
-              <p className="text-xs font-black text-white">
-                {entries[0]?.xp} XP
-              </p>
-            </div>
-          </div>
-
-          {/* 3rd */}
-          <div className="flex flex-col items-center gap-1 flex-1">
-            <div className="text-2xl">🥉</div>
-            <div
-              className="w-full rounded-t-2xl flex flex-col items-center py-3 px-2"
-              style={{
-                background: "linear-gradient(135deg, #D97706, #B45309)",
-                minHeight: 64,
-              }}
-            >
-              <div className="text-xl">
-                {RANK_ICONS[entries[2]?.rank] || "🎮"}
-              </div>
-              <p className="text-[10px] font-bold text-white text-center break-all">
-                {truncatePrincipal(entries[2]?.principal || "")}
-              </p>
-              <p className="text-xs font-black text-white">
-                {entries[2]?.xp} XP
-              </p>
-            </div>
-          </div>
+            );
+          })}
         </div>
       )}
 
@@ -161,32 +170,54 @@ export function LeaderboardScreen() {
       {loading ? (
         <div
           data-ocid="leaderboard.loading_state"
-          className="bg-white rounded-3xl shadow-card p-8 text-center"
+          className="rounded-3xl p-8 text-center"
+          style={{
+            background: "#162233",
+            boxShadow: "4px 4px 10px #070e17, -3px -3px 8px #203247",
+          }}
         >
           <div className="text-3xl mb-2">⏳</div>
-          <p className="text-muted-foreground text-sm">{t.loading}</p>
+          <p className="text-sm" style={{ color: "#5a7490" }}>
+            {t.loading}
+          </p>
         </div>
       ) : (
         <div
           data-ocid="leaderboard.list"
-          className="bg-white rounded-3xl shadow-card overflow-hidden"
+          className="rounded-3xl overflow-hidden"
+          style={{
+            background: "#162233",
+            boxShadow: "4px 4px 10px #070e17, -3px -3px 8px #203247",
+          }}
         >
           {entries.map((entry, idx) => {
             const isTop3 = idx < 3;
-            const positionColor = POSITION_COLORS[idx] || "transparent";
             return (
               <div
                 key={entry.principal}
                 data-ocid={`leaderboard.item.${idx + 1}`}
-                className={`flex items-center gap-3 px-4 py-3.5 border-b border-gray-50 last:border-0 ${isTop3 ? "bg-amber-50/50" : ""}`}
+                className="flex items-center gap-3 px-4 py-3.5"
+                style={{
+                  borderBottom: "1px solid rgba(30,45,61,0.8)",
+                  background: isTop3 ? "rgba(0,229,255,0.03)" : "transparent",
+                }}
               >
                 {/* Position */}
                 <div
                   className="w-7 h-7 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0"
                   style={
                     isTop3
-                      ? { background: positionColor, color: "white" }
-                      : { background: "#F3F4F6", color: "#6B7280" }
+                      ? {
+                          background: "rgba(0,229,255,0.15)",
+                          color: "#00e5ff",
+                          border: "1px solid rgba(0,229,255,0.25)",
+                        }
+                      : {
+                          background: "#0d1b2a",
+                          color: "#5a7490",
+                          boxShadow:
+                            "inset 2px 2px 4px #080f18, inset -1px -1px 3px #1d2e40",
+                        }
                   }
                 >
                   {idx + 1}
@@ -196,7 +227,9 @@ export function LeaderboardScreen() {
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-sm flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
+                    background: "#0d1b2a",
+                    boxShadow:
+                      "inset 2px 2px 5px #080f18, inset -1px -1px 4px #1d2e40",
                   }}
                 >
                   {RANK_ICONS[entry.rank] || "🎮"}
@@ -204,14 +237,22 @@ export function LeaderboardScreen() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground truncate">
+                  <p
+                    className="text-sm font-bold truncate"
+                    style={{ color: "#e2eaf4" }}
+                  >
                     {truncatePrincipal(entry.principal)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{entry.rank}</p>
+                  <p className="text-xs" style={{ color: "#5a7490" }}>
+                    {entry.rank}
+                  </p>
                 </div>
 
                 {/* XP */}
-                <div className="text-sm font-black text-purple-600 flex-shrink-0">
+                <div
+                  className="text-sm font-black flex-shrink-0"
+                  style={{ color: "#00e5ff" }}
+                >
                   {entry.xp.toLocaleString()} XP
                 </div>
               </div>
@@ -221,7 +262,8 @@ export function LeaderboardScreen() {
           {entries.length === 0 && (
             <div
               data-ocid="leaderboard.empty_state"
-              className="p-8 text-center text-muted-foreground text-sm"
+              className="p-8 text-center text-sm"
+              style={{ color: "#5a7490" }}
             >
               {t.noData}
             </div>
@@ -230,18 +272,33 @@ export function LeaderboardScreen() {
       )}
 
       {/* Your rank */}
-      <div className="bg-white rounded-3xl shadow-card p-4 flex items-center gap-3">
+      <div
+        className="rounded-3xl p-4 flex items-center gap-3"
+        style={{
+          background: "#162233",
+          boxShadow: "4px 4px 10px #070e17, -3px -3px 8px #203247",
+        }}
+      >
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-          style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)" }}
+          style={{
+            background: "#0d1b2a",
+            boxShadow: "inset 2px 2px 5px #080f18, inset -1px -1px 4px #1d2e40",
+          }}
         >
           {RANK_ICONS[rank] || "🌱"}
         </div>
         <div className="flex-1">
-          <p className="text-xs text-muted-foreground">{t.yourRank}</p>
-          <p className="text-sm font-bold text-foreground">{rank}</p>
+          <p className="text-xs" style={{ color: "#5a7490" }}>
+            {t.yourRank}
+          </p>
+          <p className="text-sm font-bold" style={{ color: "#e2eaf4" }}>
+            {rank}
+          </p>
         </div>
-        <div className="text-sm font-black text-purple-600">{xp} XP</div>
+        <div className="text-sm font-black" style={{ color: "#00e5ff" }}>
+          {xp} XP
+        </div>
       </div>
     </div>
   );

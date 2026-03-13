@@ -62,13 +62,13 @@ function AppInner() {
             className="w-full max-w-md min-h-screen flex flex-col relative"
             style={{ overflowX: "hidden" }}
           >
-            {/* Background decoration */}
+            {/* Ambient cyan glow at top */}
             <div
               className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-none"
               style={{
                 height: "100vh",
                 background:
-                  "radial-gradient(ellipse 60% 40% at 50% -10%, rgba(139,92,246,0.12) 0%, transparent 70%)",
+                  "radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0,229,255,0.06) 0%, transparent 70%)",
                 zIndex: 0,
               }}
             />

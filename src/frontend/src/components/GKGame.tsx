@@ -1,8 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGame } from "../context/GameContext";
 import { type GKQuestion, gkQuestions } from "../data/gkQuestions";
+import type { Lang } from "../data/translations";
 import { translations } from "../data/translations";
 import { backend } from "../services/backendService";
+
+function getLangField(
+  q: Pick<
+    GKQuestion,
+    "questionEn" | "questionKn" | "questionHi" | "questionTe" | "questionTa"
+  >,
+  lang: Lang,
+): string {
+  switch (lang) {
+    case "kn":
+      return q.questionKn;
+    case "hi":
+      return q.questionHi;
+    case "te":
+      return q.questionTe;
+    case "ta":
+      return q.questionTa;
+    default:
+      return q.questionEn;
+  }
+}
+
+function getOptionText(
+  opt: { en: string; kn: string; hi: string; te: string; ta: string },
+  lang: Lang,
+): string {
+  return opt[lang] ?? opt.en;
+}
 
 type GKCategory = "india" | "sports" | "science" | "world";
 type GKPhase = "playing" | "result";
@@ -277,7 +306,7 @@ export function GKGame() {
           </span>
         </div>
         <p className="text-base font-bold text-foreground leading-relaxed">
-          {language === "kn" ? question.questionKn : question.questionEn}
+          {getLangField(question, language)}
         </p>
       </div>
 
@@ -324,7 +353,7 @@ export function GKGame() {
                 >
                   {["A", "B", "C", "D"][idx]}
                 </span>
-                {language === "kn" ? opt.kn : opt.en}
+                {getOptionText(opt, language)}
               </span>
             </button>
           );
