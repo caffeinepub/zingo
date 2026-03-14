@@ -109,7 +109,6 @@ export function QuizGame() {
       setAnswered(false);
     } else {
       setPhase("result");
-      // Award rewards
       addCoins(totalCoins + (score === questions.length ? 50 : 0));
       addXP(totalXP);
       incrementGamesPlayed();
@@ -134,47 +133,58 @@ export function QuizGame() {
   ]);
 
   const timerPct = useMemo(() => (timeLeft / 30) * 100, [timeLeft]);
-  const timerColor =
-    timeLeft > 15 ? "#8B5CF6" : timeLeft > 8 ? "#F59E0B" : "#EF4444";
 
   if (phase === "result") {
     const perfect = score === questions.length;
     return (
-      <div className="flex flex-col items-center gap-5 screen-enter pb-6">
-        <div className="text-center">
+      <div
+        className="min-h-screen flex flex-col items-center gap-5 screen-enter pb-6 px-4"
+        style={{
+          background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+        }}
+      >
+        <div className="text-center pt-8">
           <div className="text-6xl mb-2">
             {perfect ? "🏆" : score >= 7 ? "🎉" : score >= 4 ? "👍" : "💪"}
           </div>
-          <h2 className="text-2xl font-black text-foreground">
+          <h2 className="text-2xl font-black text-white">
             {t.sessionComplete}
           </h2>
         </div>
-        <div className="w-full bg-white rounded-3xl shadow-card p-6 flex flex-col gap-4">
+        <div
+          className="w-full rounded-3xl p-6 flex flex-col gap-4 border border-white/10"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8), rgba(44,83,100,0.7))",
+            backdropFilter: "blur(12px)",
+            boxShadow: "0 0 20px rgba(0,229,255,0.15)",
+          }}
+        >
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">
-              {t.yourScore}
-            </span>
-            <span className="text-2xl font-black text-foreground">
+            <span className="text-white/70 font-medium">{t.yourScore}</span>
+            <span className="text-2xl font-black text-white">
               {score}/{questions.length}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">
-              {t.coinsEarned}
-            </span>
-            <span className="font-bold text-amber-600 flex items-center gap-1">
+            <span className="text-white/70 font-medium">{t.coinsEarned}</span>
+            <span className="font-bold text-amber-400 flex items-center gap-1">
               🪙 +{totalCoins + (perfect ? 50 : 0)}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">
-              {t.xpEarned}
-            </span>
-            <span className="font-bold text-purple-600">+{totalXP} XP</span>
+            <span className="text-white/70 font-medium">{t.xpEarned}</span>
+            <span className="font-bold text-cyan-300">+{totalXP} XP</span>
           </div>
           {perfect && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center">
-              <p className="text-sm font-bold text-amber-700">
+            <div
+              className="rounded-2xl p-3 text-center border border-amber-400/30"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.05))",
+              }}
+            >
+              <p className="text-sm font-bold text-amber-400">
                 🌟 Perfect Score Bonus: +50 coins!
               </p>
             </div>
@@ -185,7 +195,11 @@ export function QuizGame() {
             type="button"
             data-ocid="quiz.home_button"
             onClick={() => navigate("home")}
-            className="flex-1 py-3.5 bg-white border border-border text-foreground font-bold rounded-2xl active:scale-95 transition-transform shadow-card"
+            className="flex-1 py-3.5 font-bold rounded-2xl active:scale-95 transition-transform border border-white/20 text-white"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.8))",
+            }}
           >
             🏠 {t.home}
           </button>
@@ -201,8 +215,8 @@ export function QuizGame() {
               setTotalCoins(0);
               setTotalXP(0);
             }}
-            className="flex-1 py-3.5 text-white font-bold rounded-2xl active:scale-95 transition-transform shadow-card"
-            style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)" }}
+            className="flex-1 py-3.5 text-white font-bold rounded-2xl active:scale-95 transition-transform"
+            style={{ background: "linear-gradient(135deg, #00bcd4, #2196f3)" }}
           >
             🔄 {t.playAgain}
           </button>
@@ -212,51 +226,92 @@ export function QuizGame() {
   }
 
   return (
-    <div className="flex flex-col gap-4 screen-enter pb-6">
+    <div
+      className="min-h-screen flex flex-col gap-4 screen-enter pb-6 px-4 pt-4"
+      style={{
+        background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           data-ocid="quiz.home_button"
           onClick={() => navigate("home")}
-          className="w-10 h-10 rounded-2xl bg-white shadow-card flex items-center justify-center text-lg active:scale-90 transition-transform"
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg active:scale-90 transition-transform text-white border border-white/20"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+            backdropFilter: "blur(8px)",
+          }}
         >
           ←
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-black text-foreground">{t.quiz}</h1>
-          <p className="text-xs text-muted-foreground">
+          <h1 className="text-lg font-black text-white">{t.quiz}</h1>
+          <p className="text-xs text-white/60">
             {t.question} {currentIdx + 1} {t.of} {questions.length}
           </p>
         </div>
-        <div className="bg-white shadow-card rounded-2xl px-3 py-2 text-sm font-bold text-purple-600">
+        <div
+          className="rounded-2xl px-3 py-2 text-sm font-bold text-cyan-300 border border-cyan-400/30"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(33,150,243,0.1))",
+          }}
+        >
           {score} ✓
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div
+        className="w-full h-2 rounded-full overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.1)" }}
+      >
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{
             width: `${(currentIdx / questions.length) * 100}%`,
-            background: "linear-gradient(90deg, #8B5CF6, #6366F1)",
+            background: "linear-gradient(90deg, #00e5ff, #2196f3)",
           }}
         />
       </div>
 
       {/* Timer */}
-      <div className="flex items-center gap-3 bg-white rounded-2xl shadow-card px-4 py-2.5">
-        <span className="text-sm text-muted-foreground">{t.timer}</span>
-        <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+      <div
+        className="flex items-center gap-3 rounded-2xl px-4 py-2.5 border border-white/10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+          backdropFilter: "blur(8px)",
+          boxShadow: "0 0 20px rgba(0,229,255,0.1)",
+        }}
+      >
+        <span className="text-sm text-white/60">{t.timer}</span>
+        <div
+          className="flex-1 h-3 rounded-full overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.1)" }}
+        >
           <div
             className="h-full rounded-full transition-all duration-1000"
-            style={{ width: `${timerPct}%`, background: timerColor }}
+            style={{
+              width: `${timerPct}%`,
+              background:
+                timeLeft > 15
+                  ? "linear-gradient(90deg, #00e5ff, #2196f3)"
+                  : timeLeft > 8
+                    ? "linear-gradient(90deg, #f59e0b, #ef4444)"
+                    : "linear-gradient(90deg, #ef4444, #dc2626)",
+            }}
           />
         </div>
         <span
           className={`text-sm font-black tabular-nums ${timeLeft <= 8 ? "timer-urgent" : ""}`}
-          style={{ color: timerColor }}
+          style={{
+            color:
+              timeLeft > 15 ? "#00e5ff" : timeLeft > 8 ? "#f59e0b" : "#ef4444",
+          }}
         >
           {timeLeft}
           {t.seconds}
@@ -266,12 +321,18 @@ export function QuizGame() {
       {/* Question card */}
       <div
         data-ocid="quiz.question_card"
-        className="bg-white rounded-3xl shadow-card p-5"
+        className="rounded-3xl p-5 border border-white/10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8), rgba(44,83,100,0.7))",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 0 20px rgba(0,229,255,0.15)",
+        }}
       >
-        <div className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3">
+        <div className="text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-3">
           {question.category}
         </div>
-        <p className="text-base font-bold text-foreground leading-relaxed">
+        <p className="text-base font-bold text-white leading-relaxed">
           {getLangField(question, language)}
         </p>
       </div>
@@ -281,19 +342,37 @@ export function QuizGame() {
         {question.options.map((opt, idx) => {
           const isCorrect = idx === question.correctIndex;
           const isSelected = idx === selected;
+          let btnStyle: React.CSSProperties = {};
           let btnClass =
             "w-full py-3.5 px-4 rounded-2xl text-left text-sm font-semibold transition-all active:scale-95 border-2 ";
+
           if (answered) {
-            if (isCorrect)
-              btnClass += "bg-green-50 border-green-400 text-green-800";
-            else if (isSelected)
-              btnClass += "bg-red-50 border-red-400 text-red-700";
-            else
-              btnClass +=
-                "bg-white border-transparent text-muted-foreground opacity-60";
+            if (isCorrect) {
+              btnClass += "border-green-400 text-white";
+              btnStyle = {
+                background:
+                  "linear-gradient(135deg, rgba(22,101,52,0.8), rgba(21,128,61,0.6))",
+              };
+            } else if (isSelected) {
+              btnClass += "border-red-400 text-white";
+              btnStyle = {
+                background:
+                  "linear-gradient(135deg, rgba(127,29,29,0.8), rgba(153,27,27,0.6))",
+              };
+            } else {
+              btnClass += "border-white/10 text-white/40 opacity-60";
+              btnStyle = {
+                background:
+                  "linear-gradient(135deg, rgba(15,32,39,0.6), rgba(32,58,67,0.4))",
+              };
+            }
           } else {
-            btnClass +=
-              "bg-white border-border text-foreground hover:border-purple-300 hover:bg-purple-50";
+            btnClass += "border-white/20 text-white hover:border-cyan-400/50";
+            btnStyle = {
+              background:
+                "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.7))",
+              backdropFilter: "blur(8px)",
+            };
           }
 
           return (
@@ -304,18 +383,18 @@ export function QuizGame() {
               onClick={() => handleOption(idx)}
               disabled={answered}
               className={btnClass}
+              style={btnStyle}
             >
               <span className="flex items-center gap-3">
                 <span
-                  className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0"
+                  className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 text-white"
                   style={{
                     background:
                       answered && isCorrect
                         ? "#22c55e"
                         : answered && isSelected && !isCorrect
                           ? "#ef4444"
-                          : "linear-gradient(135deg, #8B5CF6, #6366F1)",
-                    color: "white",
+                          : "linear-gradient(135deg, #00bcd4, #2196f3)",
                   }}
                 >
                   {["A", "B", "C", "D"][idx]}
@@ -332,8 +411,11 @@ export function QuizGame() {
         <button
           type="button"
           onClick={handleNext}
-          className="w-full py-3.5 text-white font-bold rounded-2xl active:scale-95 transition-transform shadow-card slide-in"
-          style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)" }}
+          className="w-full py-3.5 text-white font-bold rounded-2xl active:scale-95 transition-transform slide-in"
+          style={{
+            background: "linear-gradient(135deg, #00bcd4, #2196f3)",
+            boxShadow: "0 0 16px rgba(0,229,255,0.3)",
+          }}
         >
           {currentIdx < questions.length - 1
             ? `${t.next} →`

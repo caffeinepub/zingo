@@ -17,7 +17,6 @@ function getCellsBetween(start: CellPos, end: CellPos): CellPos[] {
   if (steps === 0) return [start];
   const stepR = dr / steps;
   const stepC = dc / steps;
-  // Only allow straight lines
   if (Math.abs(stepR) > 1 || Math.abs(stepC) > 1) return [];
   for (let i = 0; i <= steps; i++) {
     cells.push({
@@ -68,7 +67,6 @@ export function WordSearchGame() {
         return;
       }
 
-      // Trying to select end
       const cells = getCellsBetween(startCell, pos);
       const word = getWordFromCells(cells, puzzle.grid);
       const reversed = word.split("").reverse().join("");
@@ -130,35 +128,63 @@ export function WordSearchGame() {
   return (
     <div
       data-ocid="word_search.screen"
-      className="flex flex-col gap-4 screen-enter pb-6"
+      className="min-h-screen flex flex-col gap-4 screen-enter pb-6 px-4 pt-4"
+      style={{
+        background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => navigate("home")}
-          className="w-10 h-10 rounded-2xl bg-white shadow-card flex items-center justify-center text-lg active:scale-90"
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg active:scale-90 text-white border border-white/20"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+            backdropFilter: "blur(8px)",
+          }}
         >
           ←
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-black text-foreground">{t.wordSearch}</h1>
-          <p className="text-xs text-muted-foreground">{puzzle.title}</p>
+          <h1 className="text-lg font-black text-white">{t.wordSearch}</h1>
+          <p className="text-xs text-white/60">{puzzle.title}</p>
         </div>
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2 text-sm font-bold text-amber-700">
+        <div
+          className="rounded-2xl px-3 py-2 text-sm font-bold text-amber-400 border border-amber-400/30"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.05))",
+          }}
+        >
           🪙 {totalCoins}
         </div>
       </div>
 
       {/* Instructions */}
-      <div className="bg-white/60 rounded-2xl px-4 py-2 text-center">
-        <p className="text-xs text-muted-foreground">
+      <div
+        className="rounded-2xl px-4 py-2 text-center border border-white/10"
+        style={{
+          background: "rgba(255,255,255,0.05)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <p className="text-xs text-white/60">
           {startCell ? "Tap the end letter of the word" : t.findWords}
         </p>
       </div>
 
       {/* Grid */}
-      <div className="bg-white rounded-3xl shadow-card p-4 overflow-x-auto">
+      <div
+        className="rounded-3xl p-4 overflow-x-auto border border-white/10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8), rgba(44,83,100,0.7))",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 0 20px rgba(0,229,255,0.15)",
+        }}
+      >
         <div
           className="grid gap-1 mx-auto"
           style={{
@@ -180,25 +206,28 @@ export function WordSearchGame() {
                   data-ocid={`word_search.grid_cell.${rIdx * puzzle.size.cols + cIdx + 1}`}
                   onClick={() => handleCellClick(rIdx, cIdx)}
                   onMouseEnter={() => handleCellHover(rIdx, cIdx)}
-                  className={`${cellSize} rounded-xl ${cellText} font-black flex items-center justify-center transition-all active:scale-90 select-none ${
-                    found
-                      ? "text-white"
-                      : hovered || isStart
-                        ? "text-white"
-                        : "bg-gray-50 text-foreground"
-                  }`}
+                  className={`${cellSize} rounded-xl ${cellText} font-black flex items-center justify-center transition-all active:scale-90 select-none`}
                   style={
                     found
                       ? {
                           background:
-                            "linear-gradient(135deg, #10B981, #059669)",
+                            "linear-gradient(135deg, #00bcd4, #2196f3)",
+                          color: "white",
+                          boxShadow: "0 0 8px rgba(0,229,255,0.4)",
                         }
                       : hovered || isStart
                         ? {
                             background:
-                              "linear-gradient(135deg, #F59E0B, #EAB308)",
+                              "linear-gradient(135deg, rgba(0,188,212,0.4), rgba(33,150,243,0.3))",
+                            color: "white",
+                            border: "1px solid rgba(0,229,255,0.5)",
                           }
-                        : {}
+                        : {
+                            background:
+                              "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.6))",
+                            color: "rgba(255,255,255,0.8)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                          }
                   }
                 >
                   {cell}
@@ -209,10 +238,18 @@ export function WordSearchGame() {
         </div>
       </div>
 
-      {/* Words to find */}
-      <div className="bg-white rounded-3xl shadow-card p-4">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
-          {t.wordsFound}: {foundWords.length}/{puzzle.words.length}
+      {/* Word list */}
+      <div
+        className="rounded-3xl p-4 border border-white/10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 0 20px rgba(0,229,255,0.1)",
+        }}
+      >
+        <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">
+          {t.findWords}
         </p>
         <div className="flex flex-wrap gap-2">
           {puzzle.words.map((word) => {
@@ -220,11 +257,16 @@ export function WordSearchGame() {
             return (
               <span
                 key={word}
-                className={`px-3 py-1.5 rounded-xl text-sm font-bold ${
+                className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${
                   found
-                    ? "bg-green-100 text-green-700 line-through"
-                    : "bg-gray-100 text-foreground"
+                    ? "border-cyan-400/40 text-cyan-300 line-through"
+                    : "border-white/15 text-white/60"
                 }`}
+                style={{
+                  background: found
+                    ? "linear-gradient(135deg, rgba(0,188,212,0.2), rgba(33,150,243,0.1))"
+                    : "rgba(255,255,255,0.05)",
+                }}
               >
                 {word}
               </span>
@@ -233,32 +275,44 @@ export function WordSearchGame() {
         </div>
       </div>
 
-      {/* Puzzle complete */}
+      {/* All found */}
       {allFound && (
-        <div className="bg-green-50 border border-green-200 rounded-3xl p-5 text-center pop-in">
+        <div
+          className="rounded-3xl p-5 text-center pop-in border border-cyan-400/30"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0,188,212,0.25), rgba(33,150,243,0.15))",
+            backdropFilter: "blur(12px)",
+            boxShadow: "0 0 20px rgba(0,229,255,0.25)",
+          }}
+        >
           <div className="text-4xl mb-2">🎉</div>
-          <h3 className="text-lg font-black text-green-800 mb-1">
-            {t.puzzleComplete}
+          <h3 className="text-lg font-black text-cyan-300 mb-1">
+            Puzzle Complete!
           </h3>
+          <p className="text-sm text-white/60 mb-4">
+            Found all {puzzle.words.length} words!
+          </p>
           {puzzleIdx < wordSearchPuzzles.length - 1 ? (
             <button
               type="button"
-              data-ocid="word_search.next_puzzle_button"
               onClick={handleNextPuzzle}
-              className="w-full py-3 text-white font-bold rounded-2xl mt-3 active:scale-95"
+              className="w-full py-3 text-white font-bold rounded-2xl active:scale-95"
               style={{
-                background: "linear-gradient(135deg, #F59E0B, #EAB308)",
+                background: "linear-gradient(135deg, #00bcd4, #2196f3)",
+                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
               }}
             >
-              {t.nextPuzzle} →
+              Next Puzzle →
             </button>
           ) : (
             <button
               type="button"
               onClick={() => navigate("home")}
-              className="w-full py-3 text-white font-bold rounded-2xl mt-3 active:scale-95"
+              className="w-full py-3 text-white font-bold rounded-2xl active:scale-95"
               style={{
-                background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
+                background: "linear-gradient(135deg, #00bcd4, #2196f3)",
+                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
               }}
             >
               🏠 {t.home}

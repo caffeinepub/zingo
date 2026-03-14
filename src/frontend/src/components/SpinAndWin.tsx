@@ -43,7 +43,6 @@ export function SpinAndWin() {
     if (spinning || !canSpin) return;
     setSpinning(true);
 
-    // Pick a winning segment (will be confirmed by backend)
     const targetSegIdx = Math.floor(Math.random() * SEG_COUNT);
     const spins = 5 + Math.floor(Math.random() * 3);
     const targetDeg =
@@ -53,7 +52,6 @@ export function SpinAndWin() {
 
     setRotation(newRotation);
 
-    // Call backend
     let coins = SEGMENTS[targetSegIdx].coins;
     try {
       const result = await backend.spinAndWin();
@@ -82,7 +80,6 @@ export function SpinAndWin() {
     setSpinsUsedToday(false);
   }, []);
 
-  // Draw wheel as SVG
   const size = 280;
   const cx = size / 2;
   const cy = size / 2;
@@ -113,22 +110,35 @@ export function SpinAndWin() {
   return (
     <div
       data-ocid="spin.screen"
-      className="flex flex-col items-center gap-5 screen-enter pb-6"
+      className="min-h-screen flex flex-col items-center gap-5 screen-enter pb-6 px-4 pt-4"
+      style={{
+        background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between w-full">
         <button
           type="button"
+          data-ocid="spin.home_button"
           onClick={() => navigate("home")}
-          className="w-10 h-10 rounded-2xl bg-white shadow-card flex items-center justify-center text-lg active:scale-90"
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg active:scale-90 transition-transform border border-white/20"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+            backdropFilter: "blur(8px)",
+            boxShadow: "4px 4px 10px #070e17, -3px -3px 8px #203247",
+            color: "#00e5ff",
+          }}
         >
           ←
         </button>
-        <h1 className="text-lg font-black text-foreground">{t.spinWin}</h1>
+        <h1 className="text-lg font-black text-white">{t.spinWin}</h1>
         <div className="w-10" />
       </div>
 
-      <p className="text-sm text-muted-foreground">{t.spinToWin}</p>
+      <p className="text-sm" style={{ color: "#9fb3c8" }}>
+        {t.spinToWin}
+      </p>
 
       {/* Wheel container */}
       <div className="relative flex items-center justify-center">
@@ -140,8 +150,8 @@ export function SpinAndWin() {
             height: 0,
             borderLeft: "12px solid transparent",
             borderRight: "12px solid transparent",
-            borderTop: "28px solid #8B5CF6",
-            filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+            borderTop: "28px solid #00e5ff",
+            filter: "drop-shadow(0 2px 8px rgba(0,229,255,0.6))",
           }}
         />
 
@@ -151,11 +161,17 @@ export function SpinAndWin() {
           style={{
             width: size + 20,
             height: size + 20,
-            background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
+            background:
+              "linear-gradient(135deg, rgba(0,229,255,0.3), rgba(33,150,243,0.2))",
+            boxShadow:
+              "0 0 30px rgba(0,229,255,0.25), 4px 4px 15px #070e17, -3px -3px 10px #203247",
             padding: 4,
           }}
         >
-          <div className="w-full h-full rounded-full bg-white/20" />
+          <div
+            className="w-full h-full rounded-full"
+            style={{ background: "rgba(0,229,255,0.05)" }}
+          />
         </div>
 
         {/* Wheel */}
@@ -182,7 +198,7 @@ export function SpinAndWin() {
                 <path
                   d={segPath(segIdx)}
                   fill={seg.color}
-                  stroke="white"
+                  stroke="rgba(0,229,255,0.3)"
                   strokeWidth="2"
                 />
                 <text
@@ -199,7 +215,7 @@ export function SpinAndWin() {
               </g>
             ))}
             {/* Center circle */}
-            <circle cx={cx} cy={cy} r={28} fill="white" />
+            <circle cx={cx} cy={cy} r={28} fill="#0d1b2a" />
             <circle cx={cx} cy={cy} r={22} fill="url(#grad)" />
             <text
               x={cx}
@@ -212,8 +228,8 @@ export function SpinAndWin() {
             </text>
             <defs>
               <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#8B5CF6" />
-                <stop offset="100%" stopColor="#6366F1" />
+                <stop offset="0%" stopColor="#00b8d4" />
+                <stop offset="100%" stopColor="#2196f3" />
               </linearGradient>
             </defs>
           </svg>
@@ -222,13 +238,23 @@ export function SpinAndWin() {
 
       {/* Status */}
       {spinsUsedToday && extraSpins === 0 ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center text-sm text-amber-700 font-medium">
+        <div
+          className="rounded-2xl px-4 py-3 text-center text-sm font-medium border"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.05))",
+            borderColor: "rgba(245,166,35,0.3)",
+            color: "#f59e0b",
+          }}
+        >
           {t.spinsUsed}
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs" style={{ color: "#9fb3c8" }}>
           {extraSpins > 0
-            ? `${extraSpins} ${language === "en" ? "extra spin(s) available" : "ಹೆಚ್ಚು ತಿರುಗಿ ಲಭ್ಯ"}`
+            ? `${extraSpins} ${
+                language === "en" ? "extra spin(s) available" : "ಹೆಚ್ಚು ತಿರುಗಿ ಲಭ್ಯ"
+              }`
             : language === "en"
               ? "1 free spin per day"
               : "ದಿನಕ್ಕೆ 1 ಉಚಿತ ತಿರುಗಿ"}
@@ -241,11 +267,15 @@ export function SpinAndWin() {
         data-ocid="spin.spin_button"
         onClick={handleSpin}
         disabled={spinning || !canSpin}
-        className="w-full py-4 text-white text-xl font-black rounded-3xl active:scale-95 transition-all shadow-modal disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-4 text-white text-xl font-black rounded-3xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
           background: spinning
-            ? "#9CA3AF"
-            : "linear-gradient(135deg, #8B5CF6, #6366F1)",
+            ? "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.7))"
+            : "linear-gradient(135deg, #00b8d4, #00e5ff)",
+          color: spinning ? "#9fb3c8" : "#0d1b2a",
+          boxShadow: spinning
+            ? "none"
+            : "0 0 24px rgba(0,229,255,0.4), 4px 4px 10px #070e17",
         }}
       >
         {spinning ? t.spinning : t.spin}
@@ -264,20 +294,30 @@ export function SpinAndWin() {
         <div
           data-ocid="spin.reward.modal"
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.6)" }}
+          style={{ background: "rgba(0,0,0,0.75)" }}
           onClick={() => setShowReward(false)}
           onKeyDown={(e) => {
             if (e.key === "Escape") setShowReward(false);
           }}
         >
-          <div className="bg-white rounded-3xl p-8 mx-6 text-center shadow-modal pop-in max-w-xs w-full">
+          <div
+            className="rounded-3xl p-8 mx-6 text-center pop-in max-w-xs w-full border border-white/10"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(15,32,39,0.98), rgba(32,58,67,0.95), rgba(44,83,100,0.9))",
+              backdropFilter: "blur(16px)",
+              boxShadow:
+                "0 0 40px rgba(0,229,255,0.25), 4px 4px 20px #070e17, -3px -3px 12px #203247",
+            }}
+          >
             <div className="text-5xl mb-3">🎉</div>
-            <h3 className="text-2xl font-black text-foreground mb-2">
-              {t.youWon}
-            </h3>
+            <h3 className="text-2xl font-black text-white mb-2">{t.youWon}</h3>
             <div className="flex items-center justify-center gap-2 mb-5">
               <span className="text-4xl">🪙</span>
-              <span className="text-5xl font-black text-amber-500">
+              <span
+                className="text-5xl font-black"
+                style={{ color: "#f59e0b" }}
+              >
                 {wonCoins}
               </span>
             </div>
@@ -285,9 +325,11 @@ export function SpinAndWin() {
               type="button"
               data-ocid="spin.reward.close_button"
               onClick={() => setShowReward(false)}
-              className="w-full py-3.5 text-white font-bold rounded-2xl active:scale-95"
+              className="w-full py-3.5 font-bold rounded-2xl active:scale-95 transition-transform"
               style={{
-                background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
+                background: "linear-gradient(135deg, #00b8d4, #00e5ff)",
+                color: "#0d1b2a",
+                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
               }}
             >
               {t.continue} 🎰

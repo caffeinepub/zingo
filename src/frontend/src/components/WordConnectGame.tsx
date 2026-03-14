@@ -81,60 +81,89 @@ export function WordConnectGame() {
   return (
     <div
       data-ocid="word_connect.screen"
-      className="flex flex-col gap-5 screen-enter pb-6"
+      className="min-h-screen flex flex-col gap-5 screen-enter pb-6 px-4 pt-4"
+      style={{
+        background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => navigate("home")}
-          className="w-10 h-10 rounded-2xl bg-white shadow-card flex items-center justify-center text-lg active:scale-90"
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg active:scale-90 text-white border border-white/20"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+            backdropFilter: "blur(8px)",
+          }}
         >
           ←
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-black text-foreground">
-            {t.wordConnect}
-          </h1>
-          <p className="text-xs text-muted-foreground">
+          <h1 className="text-lg font-black text-white">{t.wordConnect}</h1>
+          <p className="text-xs text-white/60">
             {t.level} {levelIdx + 1}
           </p>
         </div>
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2 text-sm font-bold text-amber-700">
+        <div
+          className="rounded-2xl px-3 py-2 text-sm font-bold text-amber-400 border border-amber-400/30"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.05))",
+          }}
+        >
           🪙 {totalCoins}
         </div>
       </div>
 
       {/* Hint */}
       {level.hint && (
-        <div className="bg-white/60 rounded-2xl px-4 py-2 text-center">
-          <p className="text-sm text-muted-foreground">
-            💡 {language === "en" ? level.hint : level.hint}
-          </p>
+        <div
+          className="rounded-2xl px-4 py-2 text-center border border-white/10"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <p className="text-sm text-white/60">💡 {level.hint}</p>
         </div>
       )}
 
       {/* Current word display */}
-      <div className="bg-white rounded-3xl shadow-card px-6 py-5 text-center min-h-[70px] flex items-center justify-center">
+      <div
+        className="rounded-3xl px-6 py-5 text-center min-h-[70px] flex items-center justify-center border border-white/10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8), rgba(44,83,100,0.7))",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 0 20px rgba(0,229,255,0.15)",
+        }}
+      >
         {currentWord ? (
-          <span className="text-3xl font-black tracking-[0.3em] text-foreground">
+          <span className="text-3xl font-black tracking-[0.3em] text-white">
             {currentWord}
           </span>
         ) : (
-          <span className="text-muted-foreground/60 text-sm">
-            {t.tapLetters}
-          </span>
+          <span className="text-white/40 text-sm">{t.tapLetters}</span>
         )}
       </div>
 
       {/* Message */}
       {message.text && (
         <div
-          className={`rounded-2xl px-4 py-2.5 text-center text-sm font-bold pop-in ${
+          className={`rounded-2xl px-4 py-2.5 text-center text-sm font-bold pop-in border ${
             message.type === "success"
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "bg-red-50 text-red-600 border border-red-200"
+              ? "border-green-400/40 text-green-300"
+              : "border-red-400/40 text-red-300"
           }`}
+          style={{
+            background:
+              message.type === "success"
+                ? "linear-gradient(135deg, rgba(22,101,52,0.5), rgba(21,128,61,0.3))"
+                : "linear-gradient(135deg, rgba(127,29,29,0.5), rgba(153,27,27,0.3))",
+            backdropFilter: "blur(8px)",
+          }}
         >
           {message.text}
         </div>
@@ -151,13 +180,22 @@ export function WordConnectGame() {
               key={`letter-${idx}-${letter}`}
               data-ocid={`word_connect.letter.button.${idx + 1}`}
               onClick={() => handleLetterClick(idx)}
-              className={`w-14 h-14 rounded-2xl font-black text-xl transition-all active:scale-90 shadow-card ${
-                isSelected ? "text-white scale-105" : "bg-white text-foreground"
+              className={`w-14 h-14 rounded-2xl font-black text-xl transition-all active:scale-90 border ${
+                isSelected
+                  ? "text-white scale-105 border-cyan-400/70"
+                  : "text-white border-white/20"
               }`}
               style={
                 isSelected
-                  ? { background: "linear-gradient(135deg, #10B981, #059669)" }
-                  : {}
+                  ? {
+                      background: "linear-gradient(135deg, #00bcd4, #2196f3)",
+                      boxShadow: "0 0 12px rgba(0,229,255,0.4)",
+                    }
+                  : {
+                      background:
+                        "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.7))",
+                      backdropFilter: "blur(8px)",
+                    }
               }
             >
               {isSelected && position >= 0 && (
@@ -176,7 +214,12 @@ export function WordConnectGame() {
         <button
           type="button"
           onClick={handleClear}
-          className="flex-1 py-3 bg-white border border-border text-foreground font-bold rounded-2xl active:scale-95 shadow-card"
+          className="flex-1 py-3 font-bold rounded-2xl active:scale-95 text-white border border-white/20"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.7))",
+            backdropFilter: "blur(8px)",
+          }}
         >
           {t.clearWord}
         </button>
@@ -185,16 +228,28 @@ export function WordConnectGame() {
           data-ocid="word_connect.submit_button"
           onClick={handleSubmit}
           disabled={currentWord.length < 2}
-          className="flex-2 flex-grow-[2] py-3 text-white font-bold rounded-2xl active:scale-95 shadow-card disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: "linear-gradient(135deg, #10B981, #059669)" }}
+          className="flex-2 flex-grow-[2] py-3 text-white font-bold rounded-2xl active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            background: "linear-gradient(135deg, #00bcd4, #2196f3)",
+            boxShadow:
+              currentWord.length >= 2 ? "0 0 16px rgba(0,229,255,0.3)" : "none",
+          }}
         >
           {t.submit} ✓
         </button>
       </div>
 
       {/* Target words */}
-      <div className="bg-white rounded-3xl shadow-card p-4">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+      <div
+        className="rounded-3xl p-4 border border-white/10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 0 20px rgba(0,229,255,0.1)",
+        }}
+      >
+        <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">
           {t.targetWords}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -203,11 +258,16 @@ export function WordConnectGame() {
             return (
               <span
                 key={word}
-                className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-all border ${
                   found
-                    ? "bg-green-100 text-green-700 line-through"
-                    : "bg-gray-100 text-gray-400"
+                    ? "border-green-400/40 text-green-300 line-through"
+                    : "border-white/15 text-white/40"
                 }`}
+                style={{
+                  background: found
+                    ? "linear-gradient(135deg, rgba(22,101,52,0.4), rgba(21,128,61,0.2))"
+                    : "rgba(255,255,255,0.05)",
+                }}
               >
                 {found ? word : "•".repeat(word.length)}
               </span>
@@ -218,12 +278,20 @@ export function WordConnectGame() {
 
       {/* Level complete */}
       {allFound && (
-        <div className="bg-green-50 border border-green-200 rounded-3xl p-5 text-center pop-in">
+        <div
+          className="rounded-3xl p-5 text-center pop-in border border-green-400/30"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(22,101,52,0.5), rgba(21,128,61,0.3))",
+            backdropFilter: "blur(12px)",
+            boxShadow: "0 0 20px rgba(34,197,94,0.2)",
+          }}
+        >
           <div className="text-4xl mb-2">🎉</div>
-          <h3 className="text-lg font-black text-green-800 mb-1">
+          <h3 className="text-lg font-black text-green-300 mb-1">
             {t.levelComplete}
           </h3>
-          <p className="text-sm text-green-600 mb-4">
+          <p className="text-sm text-green-200/70 mb-4">
             {language === "en"
               ? `Found all ${level.words.length} words!`
               : `${level.words.length} ಪದಗಳನ್ನು ಕಂಡಿದ್ದೀರಿ!`}
@@ -234,7 +302,8 @@ export function WordConnectGame() {
               onClick={handleNextLevel}
               className="w-full py-3 text-white font-bold rounded-2xl active:scale-95"
               style={{
-                background: "linear-gradient(135deg, #10B981, #059669)",
+                background: "linear-gradient(135deg, #00bcd4, #2196f3)",
+                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
               }}
             >
               {t.next} Level →
@@ -245,7 +314,8 @@ export function WordConnectGame() {
               onClick={() => navigate("home")}
               className="w-full py-3 text-white font-bold rounded-2xl active:scale-95"
               style={{
-                background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
+                background: "linear-gradient(135deg, #00bcd4, #2196f3)",
+                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
               }}
             >
               🏠 {t.home}
