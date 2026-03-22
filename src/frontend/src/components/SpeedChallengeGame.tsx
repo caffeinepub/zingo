@@ -5,6 +5,7 @@ import { quizQuestions } from "../data/quizQuestions";
 import type { Lang } from "../data/translations";
 import { translations } from "../data/translations";
 import { backend } from "../services/backendService";
+import { GameResultModal } from "./GameResultModal";
 
 function getLangField(
   q: Pick<
@@ -40,34 +41,33 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
+const MAX_SCORE = 20;
+
+function calcReward(score: number): { coins: number; xp: number } {
+  const pct = score / MAX_SCORE;
+  if (pct >= 0.6) return { coins: 20, xp: 20 };
+  if (pct >= 0.3) return { coins: 10, xp: 10 };
+  return { coins: 2, xp: 5 };
+}
+
 export function SpeedChallengeGame() {
-  const { navigate, language, addCoins, addXP, incrementGamesPlayed } =
+  const { navigate, language, addCoins, addXP, incrementGamesPlayed, watchAd } =
     useGame();
   const t = translations[language];
 
   const [phase, setPhase] = useState<SpeedPhase>("ready");
   const [questions] = useState(() => shuffle(quizQuestions));
   const [qIdx, setQIdx] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [maxStreak, setMaxStreak] = useState(0);
-  const [totalCoins, setTotalCoins] = useState(0);
-  const [totalXP, setTotalXP] = useState(0);
-  const [highScore, setHighScore] = useState<number>(0);
+  const [_maxStreak, setMaxStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [answered, setAnswered] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [highScore, setHighScore] = useState(0);
+  const [reward, setReward] = useState({ coins: 0, xp: 0 });
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    backend
-      .getHighScore("speed_challenge")
-      .then((hs) => {
-        if (hs) setHighScore(Number(hs.score));
-      })
-      .catch(() => {});
-  }, []);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
@@ -76,54 +76,52 @@ export function SpeedChallengeGame() {
     }
   }, []);
 
+  useEffect(() => {
+    const hs = localStorage.getItem("zingo_speed_hs");
+    if (hs) setHighScore(Number(hs));
+  }, []);
+
   const startGame = useCallback(() => {
     setPhase("playing");
-    setQIdx(0);
-    setTimeLeft(60);
     setScore(0);
     setStreak(0);
     setMaxStreak(0);
-    setTotalCoins(0);
-    setTotalXP(0);
+    setTimeLeft(60);
+    setQIdx(0);
     setAnswered(false);
     setSelectedIdx(null);
+    setReward({ coins: 0, xp: 0 });
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
+          stopTimer();
+          setScore((finalScore) => {
+            const r = calcReward(finalScore);
+            setReward(r);
+            addCoins(r.coins);
+            addXP(r.xp);
+            backend
+              .submitGameResult(
+                "speedChallenge",
+                BigInt(finalScore),
+                BigInt(r.coins),
+                BigInt(r.xp),
+              )
+              .catch(() => {});
+            if (finalScore > highScore) {
+              localStorage.setItem("zingo_speed_hs", String(finalScore));
+              setHighScore(finalScore);
+            }
+            return finalScore;
+          });
+          setPhase("result");
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  }, []);
-
-  useEffect(() => {
-    if (phase === "playing" && timeLeft === 0) {
-      stopTimer();
-      setPhase("result");
-      setScore((finalScore) => {
-        setTotalCoins((finalCoins) => {
-          setTotalXP((finalXP) => {
-            addCoins(finalCoins);
-            addXP(finalXP);
-            incrementGamesPlayed();
-            backend
-              .submitGameResult(
-                "speed_challenge",
-                BigInt(finalScore),
-                BigInt(finalCoins),
-                BigInt(finalXP),
-              )
-              .catch(() => {});
-            return finalXP;
-          });
-          return finalCoins;
-        });
-        return finalScore;
-      });
-    }
-  }, [timeLeft, phase, stopTimer, addCoins, addXP, incrementGamesPlayed]);
+  }, [stopTimer, addCoins, addXP, highScore]);
 
   useEffect(() => () => stopTimer(), [stopTimer]);
 
@@ -132,23 +130,17 @@ export function SpeedChallengeGame() {
       if (answered || phase !== "playing") return;
       setAnswered(true);
       setSelectedIdx(idx);
-
-      const question = questions[qIdx % questions.length];
-      const correct = idx === question.correctIndex;
-
-      if (correct) {
+      const isCorrect = idx === questions[qIdx % questions.length].correctIndex;
+      if (isCorrect) {
         setScore((s) => s + 1);
-        setTotalCoins((c) => c + 5);
-        setTotalXP((x) => x + 8);
-        setStreak((str) => {
-          const newStr = str + 1;
-          setMaxStreak((ms) => Math.max(ms, newStr));
-          return newStr;
+        setStreak((s) => {
+          const next = s + 1;
+          setMaxStreak((m) => Math.max(m, next));
+          return next;
         });
       } else {
         setStreak(0);
       }
-
       setTimeout(() => {
         setQIdx((q) => q + 1);
         setAnswered(false);
@@ -187,25 +179,15 @@ export function SpeedChallengeGame() {
           <h1 className="text-lg font-black text-white">{t.speedChallenge}</h1>
           <div className="w-10" />
         </div>
-
         <div className="text-center">
           <div className="text-7xl mb-4">⚡</div>
           <h2 className="text-3xl font-black text-white mb-2">
             {t.speedChallenge}
           </h2>
           <p className="text-white/60 text-sm">
-            {language === "kn"
-              ? "60 ಸೆಕೆಂಡ್‌ನಲ್ಲಿ ಎಷ್ಟು ಸಾಧ್ಯವೋ ಅಷ್ಟು ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ!"
-              : language === "hi"
-                ? "60 सेकंड में जितना हो सके उतने सवालों के जवाब दें!"
-                : language === "te"
-                  ? "60 సెకండ్లలో వీలైనన్ని ప్రశ్నలకు సమాధానం ఇవ్వండి!"
-                  : language === "ta"
-                    ? "60 விநாடிகளில் முடிந்தவரை கேள்விகளுக்கு பதிலளிக்கவும்!"
-                    : "Answer as many questions as possible in 60 seconds!"}
+            Answer as many questions as possible in 60 seconds!
           </p>
         </div>
-
         <div
           className="w-full rounded-3xl p-5 flex flex-col gap-3 border border-white/10"
           style={{
@@ -222,21 +204,12 @@ export function SpeedChallengeGame() {
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-white/60">
-              {language === "kn"
-                ? "ಪ್ರತಿ ಸರಿ ಉತ್ತರ"
-                : language === "hi"
-                  ? "प्रत्येक सही उत्तर"
-                  : language === "te"
-                    ? "ప్రతి సరైన సమాధానం"
-                    : language === "ta"
-                      ? "ஒவ்வொரு சரியான பதிலுக்கும்"
-                      : "Per correct answer"}
+            <span className="text-white/60">Win reward</span>
+            <span className="font-bold text-amber-400">
+              🪙 +20 coins, +20 XP
             </span>
-            <span className="font-bold text-amber-400">🪙 +5, ✨ +8 XP</span>
           </div>
         </div>
-
         <button
           type="button"
           onClick={startGame}
@@ -252,99 +225,6 @@ export function SpeedChallengeGame() {
     );
   }
 
-  if (phase === "result") {
-    const isNewHighScore = score > highScore;
-    return (
-      <div
-        className="min-h-screen flex flex-col items-center gap-5 screen-enter pb-6 px-4 pt-8"
-        style={{
-          background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-        }}
-      >
-        <div className="text-center">
-          <div className="text-6xl mb-2">
-            {score >= 20 ? "🏆" : score >= 10 ? "🎉" : "⚡"}
-          </div>
-          <h2 className="text-2xl font-black text-white">{t.gameOver}</h2>
-          {isNewHighScore && (
-            <div
-              className="rounded-2xl px-4 py-2 mt-2 border border-amber-400/30"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(245,166,35,0.2), rgba(245,166,35,0.08))",
-              }}
-            >
-              <p className="text-sm font-bold text-amber-400">
-                🌟 {t.newHighScore}
-              </p>
-            </div>
-          )}
-        </div>
-        <div
-          className="w-full rounded-3xl p-5 flex flex-col gap-3 border border-white/10"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8), rgba(44,83,100,0.7))",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 0 20px rgba(0,229,255,0.15)",
-          }}
-        >
-          <div className="flex justify-between">
-            <span className="text-white/70">{t.correct_count}</span>
-            <span className="text-2xl font-black text-cyan-300">{score}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-white/70">
-              {language === "kn"
-                ? "ಅತ್ಯುತ್ತಮ ಸತತತೆ"
-                : language === "hi"
-                  ? "सर्वश्रेष्ठ लकीर"
-                  : language === "te"
-                    ? "అత్యుత్తమ వరుస"
-                    : language === "ta"
-                      ? "சிறந்த தொடர்ச்சி"
-                      : "Best Streak"}
-            </span>
-            <span className="font-bold text-white">🔥 {maxStreak}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-white/70">{t.coinsEarned}</span>
-            <span className="font-bold text-amber-400">🪙 +{totalCoins}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-white/70">{t.xpEarned}</span>
-            <span className="font-bold text-cyan-300">+{totalXP} XP</span>
-          </div>
-        </div>
-        <div className="flex gap-3 w-full">
-          <button
-            type="button"
-            data-ocid="speed.home_button"
-            onClick={() => navigate("home")}
-            className="flex-1 py-3.5 font-bold rounded-2xl active:scale-95 text-white border border-white/20"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.8))",
-            }}
-          >
-            🏠 {t.home}
-          </button>
-          <button
-            type="button"
-            onClick={() => startGame()}
-            className="flex-1 py-3.5 text-white font-bold rounded-2xl active:scale-95"
-            style={{
-              background: "linear-gradient(135deg, #00bcd4, #2196f3)",
-              boxShadow: "0 0 16px rgba(0,229,255,0.3)",
-            }}
-          >
-            ⚡ {t.playAgain}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       data-ocid="speed.screen"
@@ -353,19 +233,46 @@ export function SpeedChallengeGame() {
         background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
       }}
     >
-      {/* Timer bar */}
-      <div className="flex items-center gap-3">
-        <div
-          className={`text-3xl font-black tabular-nums w-14 text-center ${timeLeft <= 10 ? "timer-urgent" : ""}`}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          data-ocid="speed.home_button"
+          onClick={() => {
+            stopTimer();
+            navigate("home");
+          }}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg active:scale-90 text-white border border-white/20"
           style={{
-            color:
-              timeLeft > 20 ? "#00e5ff" : timeLeft > 10 ? "#f59e0b" : "#ef4444",
+            background:
+              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+            backdropFilter: "blur(8px)",
           }}
         >
-          {timeLeft}
-        </div>
+          ←
+        </button>
+        <h1 className="text-lg font-black text-white">{t.speedChallenge}</h1>
         <div
-          className="flex-1 h-4 rounded-full overflow-hidden"
+          className="rounded-2xl px-3 py-1.5 text-sm font-black text-cyan-300 tabular-nums border border-cyan-400/30"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(33,150,243,0.1))",
+          }}
+        >
+          {score} ✓
+        </div>
+      </div>
+
+      <div
+        className="flex items-center gap-3 rounded-2xl px-4 py-2.5 border border-white/10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <span className="text-sm text-white/60">{t.timer}</span>
+        <div
+          className="flex-1 h-3 rounded-full overflow-hidden"
           style={{ background: "rgba(255,255,255,0.1)" }}
         >
           <div
@@ -381,18 +288,17 @@ export function SpeedChallengeGame() {
             }}
           />
         </div>
-        <div
-          className="rounded-2xl px-3 py-1.5 text-sm font-black text-cyan-300 tabular-nums border border-cyan-400/30"
+        <span
+          className="text-sm font-black tabular-nums"
           style={{
-            background:
-              "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(33,150,243,0.1))",
+            color:
+              timeLeft > 20 ? "#00e5ff" : timeLeft > 10 ? "#f59e0b" : "#ef4444",
           }}
         >
-          {score} ✓
-        </div>
+          {timeLeft}s
+        </span>
       </div>
 
-      {/* Streak */}
       {streak >= 2 && (
         <div
           className="rounded-2xl px-4 py-2 text-center slide-in border border-orange-400/30"
@@ -408,7 +314,6 @@ export function SpeedChallengeGame() {
         </div>
       )}
 
-      {/* Question */}
       <div
         className="rounded-3xl p-5 border border-white/10"
         style={{
@@ -423,7 +328,6 @@ export function SpeedChallengeGame() {
         </p>
       </div>
 
-      {/* Options - 2x2 grid for speed */}
       <div className="grid grid-cols-2 gap-2.5">
         {question.options.map((opt, idx) => {
           const isCorrect = idx === question.correctIndex;
@@ -431,7 +335,6 @@ export function SpeedChallengeGame() {
           let btnStyle: React.CSSProperties = {};
           let btnClass =
             "py-4 px-3 rounded-2xl text-sm font-bold transition-all active:scale-90 border-2 text-left ";
-
           if (answered) {
             if (isCorrect) {
               btnClass += "border-green-400 text-white";
@@ -453,14 +356,13 @@ export function SpeedChallengeGame() {
               };
             }
           } else {
-            btnClass += "border-white/20 text-white hover:border-cyan-400/50";
+            btnClass += "border-white/20 text-white";
             btnStyle = {
               background:
                 "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.7))",
               backdropFilter: "blur(8px)",
             };
           }
-
           return (
             <button
               type="button"
@@ -479,6 +381,24 @@ export function SpeedChallengeGame() {
           );
         })}
       </div>
+
+      <GameResultModal
+        isOpen={phase === "result"}
+        score={score}
+        maxScore={MAX_SCORE}
+        coinsEarned={reward.coins}
+        xpEarned={reward.xp}
+        gameName={t.speedChallenge}
+        onRetry={() => startGame()}
+        onExit={() => {
+          incrementGamesPlayed();
+          navigate("home");
+        }}
+        onWatchAdRetry={() => {
+          watchAd();
+          startGame();
+        }}
+      />
     </div>
   );
 }

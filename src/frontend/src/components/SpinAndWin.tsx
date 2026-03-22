@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useGame } from "../context/GameContext";
 import { translations } from "../data/translations";
 import { backend } from "../services/backendService";
+import { GameResultModal } from "./GameResultModal";
 import { RewardedAdButton } from "./RewardedAdButton";
 
 const SEGMENTS = [
@@ -19,13 +20,14 @@ const SEG_COUNT = SEGMENTS.length;
 const SEG_ANGLE = 360 / SEG_COUNT;
 
 export function SpinAndWin() {
-  const { navigate, language, addCoins } = useGame();
+  const { navigate, language, addCoins, addXP, incrementGamesPlayed, watchAd } =
+    useGame();
   const t = translations[language];
 
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [wonCoins, setWonCoins] = useState<number | null>(null);
-  const [showReward, setShowReward] = useState(false);
+  const [showResult, setShowResult] = useState(false);
   const [extraSpins, setExtraSpins] = useState(0);
   const [spinsUsedToday, setSpinsUsedToday] = useState(() => {
     const today = new Date().toDateString();
@@ -49,23 +51,20 @@ export function SpinAndWin() {
       spins * 360 + (360 - targetSegIdx * SEG_ANGLE - SEG_ANGLE / 2);
     const newRotation = currentRotation.current + targetDeg;
     currentRotation.current = newRotation;
-
     setRotation(newRotation);
 
     let coins = SEGMENTS[targetSegIdx].coins;
     try {
       const result = await backend.spinAndWin();
       coins = Number(result.rewardCoins) || coins;
-    } catch {
-      // Use local result
-    }
+    } catch {}
 
     setTimeout(() => {
       setWonCoins(coins);
-      setShowReward(true);
       addCoins(coins);
+      addXP(10);
       setSpinning(false);
-
+      setShowResult(true);
       if (extraSpins > 0) {
         setExtraSpins((e) => e - 1);
       } else {
@@ -73,9 +72,9 @@ export function SpinAndWin() {
         localStorage.setItem("zingo_spin_date", today);
       }
     }, 3200);
-  }, [spinning, canSpin, addCoins, extraSpins, today]);
+  }, [spinning, canSpin, addCoins, addXP, extraSpins, today]);
 
-  const handleExtraSpinReward = useCallback(() => {
+  const _handleExtraSpinReward = useCallback(() => {
     setExtraSpins((e) => e + 1);
     setSpinsUsedToday(false);
   }, []);
@@ -87,10 +86,7 @@ export function SpinAndWin() {
 
   function polarToCart(angle: number, radius: number) {
     const rad = ((angle - 90) * Math.PI) / 180;
-    return {
-      x: cx + radius * Math.cos(rad),
-      y: cy + radius * Math.sin(rad),
-    };
+    return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
   }
 
   function segPath(idx: number) {
@@ -115,7 +111,6 @@ export function SpinAndWin() {
         background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
       }}
     >
-      {/* Header */}
       <div className="flex items-center justify-between w-full">
         <button
           type="button"
@@ -140,9 +135,8 @@ export function SpinAndWin() {
         {t.spinToWin}
       </p>
 
-      {/* Wheel container */}
+      {/* Wheel */}
       <div className="relative flex items-center justify-center">
-        {/* Pointer */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 z-10 -translate-y-1"
           style={{
@@ -154,8 +148,6 @@ export function SpinAndWin() {
             filter: "drop-shadow(0 2px 8px rgba(0,229,255,0.6))",
           }}
         />
-
-        {/* Outer ring */}
         <div
           className="rounded-full absolute"
           style={{
@@ -173,8 +165,6 @@ export function SpinAndWin() {
             style={{ background: "rgba(0,229,255,0.05)" }}
           />
         </div>
-
-        {/* Wheel */}
         <div
           ref={wheelRef}
           style={{
@@ -214,7 +204,6 @@ export function SpinAndWin() {
                 </text>
               </g>
             ))}
-            {/* Center circle */}
             <circle cx={cx} cy={cy} r={28} fill="#0d1b2a" />
             <circle cx={cx} cy={cy} r={22} fill="url(#grad)" />
             <text
@@ -236,7 +225,6 @@ export function SpinAndWin() {
         </div>
       </div>
 
-      {/* Status */}
       {spinsUsedToday && extraSpins === 0 ? (
         <div
           className="rounded-2xl px-4 py-3 text-center text-sm font-medium border"
@@ -252,16 +240,11 @@ export function SpinAndWin() {
       ) : (
         <p className="text-xs" style={{ color: "#9fb3c8" }}>
           {extraSpins > 0
-            ? `${extraSpins} ${
-                language === "en" ? "extra spin(s) available" : "ಹೆಚ್ಚು ತಿರುಗಿ ಲಭ್ಯ"
-              }`
-            : language === "en"
-              ? "1 free spin per day"
-              : "ದಿನಕ್ಕೆ 1 ಉಚಿತ ತಿರುಗಿ"}
+            ? `${extraSpins} extra spin(s) available`
+            : "1 free spin per day"}
         </p>
       )}
 
-      {/* Spin button */}
       <button
         type="button"
         data-ocid="spin.spin_button"
@@ -281,62 +264,27 @@ export function SpinAndWin() {
         {spinning ? t.spinning : t.spin}
       </button>
 
-      {/* Extra spin button */}
-      <RewardedAdButton
-        data-ocid="spin.extra_spin_button"
-        label={t.watchAdForSpin}
-        onReward={handleExtraSpinReward}
-        className="w-full justify-center py-3"
-      />
+      <RewardedAdButton className="w-full justify-center py-3" />
 
-      {/* Reward modal */}
-      {showReward && wonCoins !== null && (
-        <div
-          data-ocid="spin.reward.modal"
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.75)" }}
-          onClick={() => setShowReward(false)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setShowReward(false);
-          }}
-        >
-          <div
-            className="rounded-3xl p-8 mx-6 text-center pop-in max-w-xs w-full border border-white/10"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(15,32,39,0.98), rgba(32,58,67,0.95), rgba(44,83,100,0.9))",
-              backdropFilter: "blur(16px)",
-              boxShadow:
-                "0 0 40px rgba(0,229,255,0.25), 4px 4px 20px #070e17, -3px -3px 12px #203247",
-            }}
-          >
-            <div className="text-5xl mb-3">🎉</div>
-            <h3 className="text-2xl font-black text-white mb-2">{t.youWon}</h3>
-            <div className="flex items-center justify-center gap-2 mb-5">
-              <span className="text-4xl">🪙</span>
-              <span
-                className="text-5xl font-black"
-                style={{ color: "#f59e0b" }}
-              >
-                {wonCoins}
-              </span>
-            </div>
-            <button
-              type="button"
-              data-ocid="spin.reward.close_button"
-              onClick={() => setShowReward(false)}
-              className="w-full py-3.5 font-bold rounded-2xl active:scale-95 transition-transform"
-              style={{
-                background: "linear-gradient(135deg, #00b8d4, #00e5ff)",
-                color: "#0d1b2a",
-                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
-              }}
-            >
-              {t.continue} 🎰
-            </button>
-          </div>
-        </div>
-      )}
+      <GameResultModal
+        isOpen={showResult}
+        score={wonCoins ?? 0}
+        maxScore={200}
+        coinsEarned={wonCoins ?? 0}
+        xpEarned={10}
+        gameName={t.spinWin}
+        onRetry={() => {
+          setShowResult(false);
+        }}
+        onExit={() => {
+          incrementGamesPlayed();
+          navigate("home");
+        }}
+        onWatchAdRetry={() => {
+          watchAd();
+          setShowResult(false);
+        }}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useGame } from "../context/GameContext";
 import { translations } from "../data/translations";
 import { wordSearchPuzzles } from "../data/wordSearchPuzzles";
 import { backend } from "../services/backendService";
+import { GameResultModal } from "./GameResultModal";
 
 interface CellPos {
   row: number;
@@ -31,8 +32,15 @@ function getWordFromCells(cells: CellPos[], grid: string[][]): string {
   return cells.map((c) => grid[c.row]?.[c.col] ?? "").join("");
 }
 
+function calcReward(score: number, max: number): { coins: number; xp: number } {
+  const pct = max > 0 ? score / max : 0;
+  if (pct >= 0.6) return { coins: 20, xp: 20 };
+  if (pct >= 0.3) return { coins: 10, xp: 10 };
+  return { coins: 2, xp: 5 };
+}
+
 export function WordSearchGame() {
-  const { navigate, language, addCoins, addXP, incrementGamesPlayed } =
+  const { navigate, language, addCoins, addXP, incrementGamesPlayed, watchAd } =
     useGame();
   const t = translations[language];
 
@@ -41,7 +49,8 @@ export function WordSearchGame() {
   const [foundWords, setFoundWords] = useState<string[]>([]);
   const [foundCells, setFoundCells] = useState<CellPos[]>([]);
   const [hoveredCells, setHoveredCells] = useState<CellPos[]>([]);
-  const [totalCoins, setTotalCoins] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const [reward, setReward] = useState({ coins: 0, xp: 0 });
 
   const puzzle = wordSearchPuzzles[puzzleIdx];
   const allFound = puzzle.words.every((w) => foundWords.includes(w));
@@ -51,7 +60,6 @@ export function WordSearchGame() {
       foundCells.some((c) => c.row === row && c.col === col),
     [foundCells],
   );
-
   const isCellHovered = useCallback(
     (row: number, col: number) =>
       hoveredCells.some((c) => c.row === row && c.col === col),
@@ -66,28 +74,40 @@ export function WordSearchGame() {
         setHoveredCells([pos]);
         return;
       }
-
       const cells = getCellsBetween(startCell, pos);
       const word = getWordFromCells(cells, puzzle.grid);
       const reversed = word.split("").reverse().join("");
-
+      let newFoundWords = foundWords;
       if (puzzle.words.includes(word) && !foundWords.includes(word)) {
-        setFoundWords((prev) => [...prev, word]);
+        newFoundWords = [...foundWords, word];
+        setFoundWords(newFoundWords);
         setFoundCells((prev) => [...prev, ...cells]);
-        addCoins(20);
-        addXP(25);
-        setTotalCoins((c) => c + 20);
       } else if (
         puzzle.words.includes(reversed) &&
         !foundWords.includes(reversed)
       ) {
-        setFoundWords((prev) => [...prev, reversed]);
+        newFoundWords = [...foundWords, reversed];
+        setFoundWords(newFoundWords);
         setFoundCells((prev) => [...prev, ...cells]);
-        addCoins(20);
-        addXP(25);
-        setTotalCoins((c) => c + 20);
       }
-
+      if (
+        newFoundWords.length === puzzle.words.length &&
+        newFoundWords.length > foundWords.length
+      ) {
+        const r = calcReward(newFoundWords.length, puzzle.words.length);
+        setReward(r);
+        addCoins(r.coins);
+        addXP(r.xp);
+        backend
+          .submitGameResult(
+            "wordSearch",
+            BigInt(newFoundWords.length),
+            BigInt(r.coins),
+            BigInt(r.xp),
+          )
+          .catch(() => {});
+        setTimeout(() => setShowResult(true), 600);
+      }
       setStartCell(null);
       setHoveredCells([]);
     },
@@ -106,24 +126,18 @@ export function WordSearchGame() {
   const handleNextPuzzle = useCallback(() => {
     if (puzzleIdx < wordSearchPuzzles.length - 1) {
       incrementGamesPlayed();
-      backend
-        .submitGameResult(
-          "wordSearch",
-          BigInt(foundWords.length),
-          BigInt(totalCoins),
-          BigInt(totalCoins),
-        )
-        .catch(() => {});
       setPuzzleIdx((p) => p + 1);
       setFoundWords([]);
       setFoundCells([]);
-      setStartCell(null);
       setHoveredCells([]);
+      setStartCell(null);
+      setShowResult(false);
+      setReward({ coins: 0, xp: 0 });
+    } else {
+      incrementGamesPlayed();
+      navigate("home");
     }
-  }, [puzzleIdx, foundWords.length, totalCoins, incrementGamesPlayed]);
-
-  const cellSize = puzzle.size.cols <= 8 ? "w-9 h-9" : "w-8 h-8";
-  const cellText = puzzle.size.cols <= 8 ? "text-sm" : "text-xs";
+  }, [puzzleIdx, incrementGamesPlayed, navigate]);
 
   return (
     <div
@@ -133,7 +147,6 @@ export function WordSearchGame() {
         background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
       }}
     >
-      {/* Header */}
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -143,109 +156,81 @@ export function WordSearchGame() {
             background:
               "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
             backdropFilter: "blur(8px)",
+            color: "#00e5ff",
           }}
         >
           ←
         </button>
         <div className="text-center">
           <h1 className="text-lg font-black text-white">{t.wordSearch}</h1>
-          <p className="text-xs text-white/60">{puzzle.title}</p>
+          <p className="text-xs text-white/60">
+            {t.puzzleComplete.split(" ")[0]} {puzzleIdx + 1}
+          </p>
         </div>
         <div
-          className="rounded-2xl px-3 py-2 text-sm font-bold text-amber-400 border border-amber-400/30"
+          className="rounded-2xl px-3 py-2 text-sm font-bold text-cyan-300 border border-cyan-400/30"
           style={{
             background:
-              "linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.05))",
+              "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(33,150,243,0.1))",
           }}
         >
-          🪙 {totalCoins}
+          {foundWords.length}/{puzzle.words.length}
         </div>
       </div>
 
-      {/* Instructions */}
       <div
-        className="rounded-2xl px-4 py-2 text-center border border-white/10"
-        style={{
-          background: "rgba(255,255,255,0.05)",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <p className="text-xs text-white/60">
-          {startCell ? "Tap the end letter of the word" : t.findWords}
-        </p>
-      </div>
-
-      {/* Grid */}
-      <div
-        className="rounded-3xl p-4 overflow-x-auto border border-white/10"
+        className="rounded-3xl overflow-hidden border border-white/10"
         style={{
           background:
-            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8), rgba(44,83,100,0.7))",
+            "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
           backdropFilter: "blur(12px)",
-          boxShadow: "0 0 20px rgba(0,229,255,0.15)",
         }}
       >
-        <div
-          className="grid gap-1 mx-auto"
-          style={{
-            gridTemplateColumns: `repeat(${puzzle.size.cols}, 1fr)`,
-            width: "fit-content",
-          }}
-        >
-          {puzzle.grid.map((row, rIdx) =>
-            row.map((cell, cIdx) => {
+        {puzzle.grid.map((row, rIdx) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: stable grid
+          <div key={`row-${rIdx}`} className="flex">
+            {/* biome-ignore lint/suspicious/noArrayIndexKey: stable grid */}
+            {row.map((cell, cIdx) => {
               const found = isCellFound(rIdx, cIdx);
               const hovered = isCellHovered(rIdx, cIdx);
-              const isStart =
-                startCell?.row === rIdx && startCell?.col === cIdx;
-              const cellKey = `p${puzzle.id}r${rIdx}c${cIdx}`;
+              // biome-ignore lint/suspicious/noArrayIndexKey: static grid
+              const cellKey = `cell-${rIdx}-${cIdx}`;
               return (
                 <button
                   type="button"
                   key={cellKey}
-                  data-ocid={`word_search.grid_cell.${rIdx * puzzle.size.cols + cIdx + 1}`}
+                  data-ocid={`word_search.cell.button.${rIdx * row.length + cIdx + 1}`}
                   onClick={() => handleCellClick(rIdx, cIdx)}
                   onMouseEnter={() => handleCellHover(rIdx, cIdx)}
-                  className={`${cellSize} rounded-xl ${cellText} font-black flex items-center justify-center transition-all active:scale-90 select-none`}
-                  style={
-                    found
-                      ? {
-                          background:
-                            "linear-gradient(135deg, #00bcd4, #2196f3)",
-                          color: "white",
-                          boxShadow: "0 0 8px rgba(0,229,255,0.4)",
-                        }
-                      : hovered || isStart
-                        ? {
-                            background:
-                              "linear-gradient(135deg, rgba(0,188,212,0.4), rgba(33,150,243,0.3))",
-                            color: "white",
-                            border: "1px solid rgba(0,229,255,0.5)",
-                          }
-                        : {
-                            background:
-                              "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.6))",
-                            color: "rgba(255,255,255,0.8)",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                          }
-                  }
+                  className="flex-1 aspect-square flex items-center justify-center text-xs font-black transition-all"
+                  style={{
+                    color: found
+                      ? "#00e5ff"
+                      : hovered
+                        ? "#fff"
+                        : "rgba(255,255,255,0.8)",
+                    background: found
+                      ? "rgba(0,229,255,0.2)"
+                      : hovered
+                        ? "rgba(0,229,255,0.1)"
+                        : "transparent",
+                    fontSize: "clamp(10px, 2.5vw, 14px)",
+                  }}
                 >
                   {cell}
                 </button>
               );
-            }),
-          )}
-        </div>
+            })}
+          </div>
+        ))}
       </div>
 
-      {/* Word list */}
       <div
         className="rounded-3xl p-4 border border-white/10"
         style={{
           background:
             "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8))",
           backdropFilter: "blur(12px)",
-          boxShadow: "0 0 20px rgba(0,229,255,0.1)",
         }}
       >
         <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">
@@ -257,14 +242,10 @@ export function WordSearchGame() {
             return (
               <span
                 key={word}
-                className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${
-                  found
-                    ? "border-cyan-400/40 text-cyan-300 line-through"
-                    : "border-white/15 text-white/60"
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${found ? "border-green-400/40 text-green-300 line-through" : "border-white/15 text-white/50"}`}
                 style={{
                   background: found
-                    ? "linear-gradient(135deg, rgba(0,188,212,0.2), rgba(33,150,243,0.1))"
+                    ? "linear-gradient(135deg, rgba(22,101,52,0.4), rgba(21,128,61,0.2))"
                     : "rgba(255,255,255,0.05)",
                 }}
               >
@@ -275,24 +256,19 @@ export function WordSearchGame() {
         </div>
       </div>
 
-      {/* All found */}
-      {allFound && (
+      {allFound && !showResult && (
         <div
-          className="rounded-3xl p-5 text-center pop-in border border-cyan-400/30"
+          className="rounded-3xl p-5 text-center border border-green-400/30"
           style={{
             background:
-              "linear-gradient(135deg, rgba(0,188,212,0.25), rgba(33,150,243,0.15))",
+              "linear-gradient(135deg, rgba(22,101,52,0.5), rgba(21,128,61,0.3))",
             backdropFilter: "blur(12px)",
-            boxShadow: "0 0 20px rgba(0,229,255,0.25)",
           }}
         >
           <div className="text-4xl mb-2">🎉</div>
-          <h3 className="text-lg font-black text-cyan-300 mb-1">
-            Puzzle Complete!
+          <h3 className="text-lg font-black text-green-300 mb-4">
+            {t.puzzleComplete}
           </h3>
-          <p className="text-sm text-white/60 mb-4">
-            Found all {puzzle.words.length} words!
-          </p>
           {puzzleIdx < wordSearchPuzzles.length - 1 ? (
             <button
               type="button"
@@ -303,16 +279,18 @@ export function WordSearchGame() {
                 boxShadow: "0 0 16px rgba(0,229,255,0.3)",
               }}
             >
-              Next Puzzle →
+              {t.next} Puzzle →
             </button>
           ) : (
             <button
               type="button"
-              onClick={() => navigate("home")}
+              onClick={() => {
+                incrementGamesPlayed();
+                navigate("home");
+              }}
               className="w-full py-3 text-white font-bold rounded-2xl active:scale-95"
               style={{
                 background: "linear-gradient(135deg, #00bcd4, #2196f3)",
-                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
               }}
             >
               🏠 {t.home}
@@ -320,6 +298,29 @@ export function WordSearchGame() {
           )}
         </div>
       )}
+
+      <GameResultModal
+        isOpen={showResult}
+        score={foundWords.length}
+        maxScore={puzzle.words.length}
+        coinsEarned={reward.coins}
+        xpEarned={reward.xp}
+        gameName={t.wordSearch}
+        onRetry={() => {
+          setFoundWords([]);
+          setFoundCells([]);
+          setShowResult(false);
+          setReward({ coins: 0, xp: 0 });
+        }}
+        onExit={() => {
+          incrementGamesPlayed();
+          navigate("home");
+        }}
+        onWatchAdRetry={() => {
+          watchAd();
+          handleNextPuzzle();
+        }}
+      />
     </div>
   );
 }

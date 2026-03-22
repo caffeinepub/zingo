@@ -5,6 +5,7 @@ import { quizQuestions } from "../data/quizQuestions";
 import type { Lang } from "../data/translations";
 import { translations } from "../data/translations";
 import { backend } from "../services/backendService";
+import { GameResultModal } from "./GameResultModal";
 
 function getLangField(
   q: Pick<
@@ -40,8 +41,15 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
+function calcReward(score: number, max: number): { coins: number; xp: number } {
+  const pct = max > 0 ? score / max : 0;
+  if (pct >= 0.6) return { coins: 20, xp: 20 };
+  if (pct >= 0.3) return { coins: 10, xp: 10 };
+  return { coins: 2, xp: 5 };
+}
+
 export function QuizGame() {
-  const { navigate, language, addCoins, addXP, incrementGamesPlayed } =
+  const { navigate, language, addCoins, addXP, incrementGamesPlayed, watchAd } =
     useGame();
   const t = translations[language];
 
@@ -52,8 +60,7 @@ export function QuizGame() {
   const [answered, setAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const [score, setScore] = useState(0);
-  const [totalCoins, setTotalCoins] = useState(0);
-  const [totalXP, setTotalXP] = useState(0);
+  const [reward, setReward] = useState({ coins: 0, xp: 0 });
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -95,8 +102,6 @@ export function QuizGame() {
       setAnswered(true);
       if (idx === question.correctIndex) {
         setScore((s) => s + 1);
-        setTotalCoins((c) => c + 10);
-        setTotalXP((x) => x + 15);
       }
     },
     [answered, clearTimer, question.correctIndex],
@@ -108,122 +113,35 @@ export function QuizGame() {
       setSelected(null);
       setAnswered(false);
     } else {
+      setScore((finalScore) => {
+        const r = calcReward(finalScore, questions.length);
+        setReward(r);
+        addCoins(r.coins);
+        addXP(r.xp);
+        backend
+          .submitGameResult(
+            "quiz",
+            BigInt(finalScore),
+            BigInt(r.coins),
+            BigInt(r.xp),
+          )
+          .catch(() => {});
+        return finalScore;
+      });
       setPhase("result");
-      addCoins(totalCoins + (score === questions.length ? 50 : 0));
-      addXP(totalXP);
-      incrementGamesPlayed();
-      backend
-        .submitGameResult(
-          "quiz",
-          BigInt(score),
-          BigInt(totalCoins),
-          BigInt(totalXP),
-        )
-        .catch(() => {});
     }
-  }, [
-    currentIdx,
-    questions.length,
-    addCoins,
-    addXP,
-    incrementGamesPlayed,
-    totalCoins,
-    totalXP,
-    score,
-  ]);
+  }, [currentIdx, questions.length, addCoins, addXP]);
+
+  const handleRestart = useCallback(() => {
+    setPhase("playing");
+    setCurrentIdx(0);
+    setSelected(null);
+    setAnswered(false);
+    setScore(0);
+    setReward({ coins: 0, xp: 0 });
+  }, []);
 
   const timerPct = useMemo(() => (timeLeft / 30) * 100, [timeLeft]);
-
-  if (phase === "result") {
-    const perfect = score === questions.length;
-    return (
-      <div
-        className="min-h-screen flex flex-col items-center gap-5 screen-enter pb-6 px-4"
-        style={{
-          background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-        }}
-      >
-        <div className="text-center pt-8">
-          <div className="text-6xl mb-2">
-            {perfect ? "🏆" : score >= 7 ? "🎉" : score >= 4 ? "👍" : "💪"}
-          </div>
-          <h2 className="text-2xl font-black text-white">
-            {t.sessionComplete}
-          </h2>
-        </div>
-        <div
-          className="w-full rounded-3xl p-6 flex flex-col gap-4 border border-white/10"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(15,32,39,0.9), rgba(32,58,67,0.8), rgba(44,83,100,0.7))",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 0 20px rgba(0,229,255,0.15)",
-          }}
-        >
-          <div className="flex justify-between items-center">
-            <span className="text-white/70 font-medium">{t.yourScore}</span>
-            <span className="text-2xl font-black text-white">
-              {score}/{questions.length}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-white/70 font-medium">{t.coinsEarned}</span>
-            <span className="font-bold text-amber-400 flex items-center gap-1">
-              🪙 +{totalCoins + (perfect ? 50 : 0)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-white/70 font-medium">{t.xpEarned}</span>
-            <span className="font-bold text-cyan-300">+{totalXP} XP</span>
-          </div>
-          {perfect && (
-            <div
-              className="rounded-2xl p-3 text-center border border-amber-400/30"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.05))",
-              }}
-            >
-              <p className="text-sm font-bold text-amber-400">
-                🌟 Perfect Score Bonus: +50 coins!
-              </p>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-3 w-full">
-          <button
-            type="button"
-            data-ocid="quiz.home_button"
-            onClick={() => navigate("home")}
-            className="flex-1 py-3.5 font-bold rounded-2xl active:scale-95 transition-transform border border-white/20 text-white"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(15,32,39,0.8), rgba(32,58,67,0.8))",
-            }}
-          >
-            🏠 {t.home}
-          </button>
-          <button
-            type="button"
-            data-ocid="quiz.play_again_button"
-            onClick={() => {
-              setPhase("playing");
-              setCurrentIdx(0);
-              setSelected(null);
-              setAnswered(false);
-              setScore(0);
-              setTotalCoins(0);
-              setTotalXP(0);
-            }}
-            className="flex-1 py-3.5 text-white font-bold rounded-2xl active:scale-95 transition-transform"
-            style={{ background: "linear-gradient(135deg, #00bcd4, #2196f3)" }}
-          >
-            🔄 {t.playAgain}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -422,6 +340,24 @@ export function QuizGame() {
             : `${t.sessionComplete} 🏆`}
         </button>
       )}
+
+      <GameResultModal
+        isOpen={phase === "result"}
+        score={score}
+        maxScore={questions.length}
+        coinsEarned={reward.coins}
+        xpEarned={reward.xp}
+        gameName={t.quiz}
+        onRetry={handleRestart}
+        onExit={() => {
+          incrementGamesPlayed();
+          navigate("home");
+        }}
+        onWatchAdRetry={() => {
+          watchAd();
+          handleRestart();
+        }}
+      />
     </div>
   );
 }

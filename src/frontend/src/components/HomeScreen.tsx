@@ -1,20 +1,41 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useGame } from "../context/GameContext";
+import type { Screen } from "../context/GameContext";
 import { translations } from "../data/translations";
 import { backend } from "../services/backendService";
 import { BannerAd } from "./BannerAd";
+import { EntryFeeModal } from "./EntryFeeModal";
 import { GameCard } from "./GameCard";
+import { RewardedAdButton } from "./RewardedAdButton";
 import { TopBar } from "./TopBar";
 
+const ENTRY_FEES: Partial<Record<Screen, number>> = {
+  quiz: 10,
+  gk: 10,
+  wordConnect: 15,
+  wordSearch: 15,
+  speedChallenge: 20,
+  spinWin: 20,
+};
+
+const LEVEL_REQUIREMENTS: Partial<Record<Screen, number>> = {
+  wordConnect: 2,
+  wordSearch: 2,
+  speedChallenge: 3,
+  spinWin: 4,
+};
+
 export function HomeScreen() {
-  const { navigate, language, addCoins, streak } = useGame();
+  const { navigate, language, addCoins, streak, coins, level, spendCoins } =
+    useGame();
   const t = translations[language];
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [rewardClaimed, setRewardClaimed] = useState(false);
   const [rewardCoins, setRewardCoins] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(streak);
+  const [entryFeeGame, setEntryFeeGame] = useState<Screen | null>(null);
 
-  // Check if we should show the daily reward modal
   useEffect(() => {
     const lastClaim = localStorage.getItem("zingo_last_claim");
     const today = new Date().toDateString();
@@ -27,76 +48,107 @@ export function HomeScreen() {
   const handleClaimReward = async () => {
     try {
       const result = await backend.claimDailyLoginReward();
-      const coins = Number(result.coinsAwarded);
+      const rewardedCoins = Number(result.coinsAwarded);
       const newStreak = Number(result.currentStreak);
-      setRewardCoins(coins);
+      setRewardCoins(rewardedCoins);
       setCurrentStreak(newStreak);
-      addCoins(coins);
+      addCoins(rewardedCoins);
       setRewardClaimed(true);
       localStorage.setItem("zingo_last_claim", new Date().toDateString());
     } catch {
-      // offline fallback
-      const coins = 20 + Math.floor(Math.random() * 30);
-      setRewardCoins(coins);
-      addCoins(coins);
+      // offline fallback - streak-based rewards
+      const streakDay = (currentStreak % 7) + 1;
+      const rewardMap: Record<number, number> = { 1: 30, 2: 50, 3: 70, 7: 150 };
+      const fallbackCoins = rewardMap[streakDay] || 30;
+      setRewardCoins(fallbackCoins);
+      addCoins(fallbackCoins);
       setRewardClaimed(true);
       localStorage.setItem("zingo_last_claim", new Date().toDateString());
     }
   };
 
+  const handleGameClick = (gameId: Screen) => {
+    const reqLevel = LEVEL_REQUIREMENTS[gameId];
+    if (reqLevel && level < reqLevel) return; // blocked by lock
+    setEntryFeeGame(gameId);
+  };
+
+  const handleEntryConfirm = () => {
+    if (!entryFeeGame) return;
+    const cost = ENTRY_FEES[entryFeeGame] || 0;
+    spendCoins(cost);
+    setEntryFeeGame(null);
+    navigate(entryFeeGame);
+  };
+
+  const handleInviteEarn = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {}
+    addCoins(30);
+    toast.success("Link copied! +30 coins 🪙");
+  };
+
   const games = [
     {
-      id: "quiz",
+      id: "quiz" as Screen,
       icon: "🧠",
       title: t.quiz,
       color: "#00e5ff",
       ocid: "game_card.quiz.button",
+      reqLevel: 1,
     },
     {
-      id: "gk",
+      id: "gk" as Screen,
       icon: "🌍",
       title: t.generalKnowledge,
       color: "#00e5ff",
       ocid: "game_card.gk.button",
+      reqLevel: 1,
     },
     {
-      id: "wordConnect",
+      id: "wordConnect" as Screen,
       icon: "🔤",
       title: t.wordConnect,
       color: "#00e5ff",
       ocid: "game_card.word_connect.button",
+      reqLevel: 2,
     },
     {
-      id: "wordSearch",
+      id: "wordSearch" as Screen,
       icon: "🔍",
       title: t.wordSearch,
       color: "#00e5ff",
       ocid: "game_card.word_search.button",
+      reqLevel: 2,
     },
     {
-      id: "speedChallenge",
+      id: "speedChallenge" as Screen,
       icon: "⚡",
       title: t.speedChallenge,
       color: "#00e5ff",
       ocid: "game_card.speed_challenge.button",
+      reqLevel: 3,
     },
     {
-      id: "spinWin",
+      id: "spinWin" as Screen,
       icon: "🎰",
       title: t.spinWin,
       color: "#00e5ff",
       ocid: "game_card.spin_win.button",
+      reqLevel: 4,
     },
-  ] as const;
+  ];
 
   const streakDays = Array.from({ length: 7 }, (_, i) => i + 1);
+  const selectedGame = entryFeeGame;
+  const entryCost = selectedGame ? ENTRY_FEES[selectedGame] || 0 : 0;
 
   return (
     <div
       data-ocid="home.screen"
       className="flex flex-col gap-4 pb-6 screen-enter"
     >
-      {/* Top Bar */}
       <TopBar />
 
       {/* Games Grid */}
@@ -108,18 +160,38 @@ export function HomeScreen() {
           🎮 Games
         </h2>
         <div className="grid grid-cols-2 gap-3">
-          {games.map((game) => (
-            <GameCard
-              key={game.id}
-              icon={game.icon}
-              title={game.title}
-              onClick={() =>
-                navigate(game.id as Parameters<typeof navigate>[0])
-              }
-              data-ocid={game.ocid}
-              color={game.color}
-            />
-          ))}
+          {games.map((game) => {
+            const locked = game.reqLevel > level;
+            return (
+              <div key={game.id} className="relative">
+                <GameCard
+                  icon={game.icon}
+                  title={game.title}
+                  onClick={() => handleGameClick(game.id)}
+                  data-ocid={game.ocid}
+                  color={locked ? "#5a7490" : game.color}
+                />
+                {locked && (
+                  <div
+                    className="absolute inset-0 rounded-3xl flex flex-col items-center justify-center"
+                    style={{
+                      background: "rgba(0,0,0,0.65)",
+                      backdropFilter: "blur(3px)",
+                      borderRadius: "inherit",
+                    }}
+                  >
+                    <span className="text-2xl">🔒</span>
+                    <span
+                      className="text-xs font-bold mt-1"
+                      style={{ color: "#9fb3c8" }}
+                    >
+                      Lv.{game.reqLevel} required
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -143,10 +215,52 @@ export function HomeScreen() {
           color="#00e5ff"
           wide
         />
+        <GameCard
+          icon="🛒"
+          title="Shop"
+          subtitle="Hints, extra lives & more"
+          onClick={() => navigate("shop")}
+          data-ocid="home.shop_button"
+          color="#00e5ff"
+          wide
+        />
+      </div>
+
+      {/* Rewarded Ad + Invite */}
+      <div className="flex flex-col gap-2">
+        <RewardedAdButton />
+        <button
+          type="button"
+          data-ocid="home.invite_button"
+          onClick={handleInviteEarn}
+          className="flex items-center gap-2 px-4 py-3 rounded-2xl font-semibold text-sm active:scale-95 transition-all"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0,229,255,0.08), rgba(33,150,243,0.08))",
+            border: "1px solid rgba(0,229,255,0.2)",
+            color: "#00e5ff",
+          }}
+        >
+          <span>📲</span> Invite &amp; Earn — Get 30 coins
+        </button>
       </div>
 
       {/* Banner Ad */}
       <BannerAd />
+
+      {/* Entry Fee Modal */}
+      <EntryFeeModal
+        isOpen={!!entryFeeGame}
+        cost={entryCost}
+        gameName={
+          entryFeeGame
+            ? games.find((g) => g.id === entryFeeGame)?.title || ""
+            : ""
+        }
+        onConfirm={handleEntryConfirm}
+        onCancel={() => setEntryFeeGame(null)}
+        canAfford={coins >= entryCost}
+      />
 
       {/* Daily Reward Modal */}
       {showRewardModal && (
@@ -154,9 +268,8 @@ export function HomeScreen() {
           className="fixed inset-0 z-40 flex items-end justify-center"
           style={{ background: "rgba(0,0,0,0.75)" }}
           onClick={(e) => {
-            if (e.target === e.currentTarget && rewardClaimed) {
+            if (e.target === e.currentTarget && rewardClaimed)
               setShowRewardModal(false);
-            }
           }}
           onKeyDown={(e) => {
             if (e.key === "Escape" && rewardClaimed) setShowRewardModal(false);
@@ -171,7 +284,6 @@ export function HomeScreen() {
                 "0 -8px 40px rgba(0,0,0,0.6), 0 0 30px rgba(0,229,255,0.08)",
             }}
           >
-            {/* Drag handle */}
             <div
               className="w-12 h-1.5 rounded-full mx-auto mb-5"
               style={{ background: "#2a3d52" }}
@@ -187,8 +299,7 @@ export function HomeScreen() {
               </p>
             </div>
 
-            {/* 7-day streak circles */}
-            <div className="flex justify-center gap-2 mb-6">
+            <div className="flex justify-center gap-2 mb-4">
               {streakDays.map((day) => (
                 <div
                   key={day}
@@ -218,6 +329,13 @@ export function HomeScreen() {
               ))}
             </div>
 
+            <div
+              className="text-xs text-center mb-4"
+              style={{ color: "#9fb3c8" }}
+            >
+              Day 1: 30🪙 · Day 2: 50🪙 · Day 3: 70🪙 · Day 7: 150🪙
+            </div>
+
             {rewardClaimed ? (
               <div className="text-center">
                 <div
@@ -225,7 +343,6 @@ export function HomeScreen() {
                   style={{
                     background: "rgba(0,229,255,0.06)",
                     border: "1px solid rgba(0,229,255,0.2)",
-                    boxShadow: "inset 2px 2px 8px rgba(0,0,0,0.3)",
                   }}
                 >
                   <div className="text-2xl mb-1">🎉</div>

@@ -1,26 +1,21 @@
-import { useState } from "react";
+import { useGame } from "../context/GameContext";
 
 interface RewardedAdButtonProps {
-  label: string;
-  onReward: () => void;
   className?: string;
 }
 
-export function RewardedAdButton({
-  label,
-  onReward,
-  className = "",
-}: RewardedAdButtonProps) {
-  const [state, setState] = useState<"idle" | "watching" | "claimed">("idle");
+export function RewardedAdButton({ className = "" }: RewardedAdButtonProps) {
+  const { watchAd, isAdOnCooldown, lastAdTime } = useGame();
+
+  const secondsLeft = isAdOnCooldown
+    ? Math.ceil((120000 - (Date.now() - lastAdTime)) / 1000)
+    : 0;
 
   const handleClick = () => {
-    if (state !== "idle") return;
-    setState("watching");
-    // Simulate ad watching
+    if (isAdOnCooldown) return;
+    // Simulate ad watching (1.5s delay)
     setTimeout(() => {
-      setState("claimed");
-      onReward();
-      setTimeout(() => setState("idle"), 2000);
+      watchAd();
     }, 1500);
   };
 
@@ -28,23 +23,22 @@ export function RewardedAdButton({
     <button
       type="button"
       onClick={handleClick}
-      disabled={state === "watching"}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-sm active:scale-95 transition-all ${
-        state === "claimed"
-          ? "bg-green-100 text-green-700"
-          : state === "watching"
-            ? "bg-gray-100 text-gray-500"
-            : "bg-amber-50 text-amber-700 border border-amber-200"
-      } ${className}`}
+      disabled={isAdOnCooldown}
+      data-ocid="home.watch_ad_button"
+      className={`flex items-center gap-2 px-4 py-3 rounded-2xl font-semibold text-sm active:scale-95 transition-all border ${className}`}
+      style={{
+        background: isAdOnCooldown
+          ? "rgba(255,255,255,0.05)"
+          : "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(33,150,243,0.15))",
+        border: isAdOnCooldown
+          ? "1px solid rgba(255,255,255,0.1)"
+          : "1px solid rgba(0,229,255,0.3)",
+        color: isAdOnCooldown ? "#5a7490" : "#00e5ff",
+        boxShadow: isAdOnCooldown ? "none" : "0 0 12px rgba(0,229,255,0.15)",
+      }}
     >
-      <span className="text-base">
-        {state === "claimed" ? "✅" : state === "watching" ? "⏳" : "📺"}
-      </span>
-      {state === "claimed"
-        ? "Reward Claimed!"
-        : state === "watching"
-          ? "Loading ad..."
-          : label}
+      <span className="text-base">{isAdOnCooldown ? "⏱️" : "📺"}</span>
+      {isAdOnCooldown ? `Cooldown: ${secondsLeft}s` : "Watch Ad (+50 coins)"}
     </button>
   );
 }

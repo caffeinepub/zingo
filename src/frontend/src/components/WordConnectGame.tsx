@@ -3,9 +3,17 @@ import { useGame } from "../context/GameContext";
 import { translations } from "../data/translations";
 import { wordConnectLevels } from "../data/wordConnectLevels";
 import { backend } from "../services/backendService";
+import { GameResultModal } from "./GameResultModal";
+
+function calcReward(score: number, max: number): { coins: number; xp: number } {
+  const pct = max > 0 ? score / max : 0;
+  if (pct >= 0.6) return { coins: 20, xp: 20 };
+  if (pct >= 0.3) return { coins: 10, xp: 10 };
+  return { coins: 2, xp: 5 };
+}
 
 export function WordConnectGame() {
-  const { navigate, language, addCoins, addXP, incrementGamesPlayed } =
+  const { navigate, language, addCoins, addXP, incrementGamesPlayed, watchAd } =
     useGame();
   const t = translations[language];
 
@@ -17,11 +25,12 @@ export function WordConnectGame() {
     text: string;
     type: "success" | "error" | "";
   }>({ text: "", type: "" });
-  const [totalCoins, setTotalCoins] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const [reward, setReward] = useState({ coins: 0, xp: 0 });
 
   const level = wordConnectLevels[levelIdx];
   const currentWord = selectedLetters.map((i) => level.letters[i]).join("");
-  const allFound = level.words.every((w) => foundWords.includes(w));
+  const _allFound = level.words.every((w) => foundWords.includes(w));
 
   const showMessage = useCallback((text: string, type: "success" | "error") => {
     setMessage({ text, type });
@@ -29,27 +38,37 @@ export function WordConnectGame() {
   }, []);
 
   const handleLetterClick = useCallback((idx: number) => {
-    setSelectedLetters((prev) => {
-      if (prev.includes(idx)) {
-        return prev.filter((i) => i !== idx);
-      }
-      return [...prev, idx];
-    });
+    setSelectedLetters((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],
+    );
   }, []);
 
   const handleSubmit = useCallback(() => {
     if (currentWord.length < 2) return;
     setAttempts((a) => a + 1);
-
     if (
       level.words.includes(currentWord) &&
       !foundWords.includes(currentWord)
     ) {
-      setFoundWords((prev) => [...prev, currentWord]);
-      setTotalCoins((c) => c + 15);
-      addCoins(15);
-      addXP(20);
+      const newFound = [...foundWords, currentWord];
+      setFoundWords(newFound);
       showMessage(`✓ ${currentWord}!`, "success");
+      // Check if all found
+      if (newFound.length === level.words.length) {
+        const r = calcReward(newFound.length, level.words.length);
+        setReward(r);
+        addCoins(r.coins);
+        addXP(r.xp);
+        backend
+          .submitGameResult(
+            "wordConnect",
+            BigInt(newFound.length),
+            BigInt(r.coins),
+            BigInt(r.xp),
+          )
+          .catch(() => {});
+        setTimeout(() => setShowResult(true), 600);
+      }
     } else if (foundWords.includes(currentWord)) {
       showMessage("Already found!", "error");
     } else {
@@ -66,17 +85,11 @@ export function WordConnectGame() {
       setFoundWords([]);
       setSelectedLetters([]);
       setAttempts(0);
+      setShowResult(false);
+      setReward({ coins: 0, xp: 0 });
       incrementGamesPlayed();
-      backend
-        .submitGameResult(
-          "wordConnect",
-          BigInt(foundWords.length),
-          BigInt(totalCoins),
-          BigInt(totalCoins),
-        )
-        .catch(() => {});
     }
-  }, [levelIdx, foundWords.length, totalCoins, incrementGamesPlayed]);
+  }, [levelIdx, incrementGamesPlayed]);
 
   return (
     <div
@@ -86,7 +99,6 @@ export function WordConnectGame() {
         background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
       }}
     >
-      {/* Header */}
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -107,17 +119,16 @@ export function WordConnectGame() {
           </p>
         </div>
         <div
-          className="rounded-2xl px-3 py-2 text-sm font-bold text-amber-400 border border-amber-400/30"
+          className="rounded-2xl px-3 py-2 text-sm font-bold text-cyan-300 border border-cyan-400/30"
           style={{
             background:
-              "linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.05))",
+              "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(33,150,243,0.1))",
           }}
         >
-          🪙 {totalCoins}
+          {foundWords.length}/{level.words.length}
         </div>
       </div>
 
-      {/* Hint */}
       {level.hint && (
         <div
           className="rounded-2xl px-4 py-2 text-center border border-white/10"
@@ -130,7 +141,6 @@ export function WordConnectGame() {
         </div>
       )}
 
-      {/* Current word display */}
       <div
         className="rounded-3xl px-6 py-5 text-center min-h-[70px] flex items-center justify-center border border-white/10"
         style={{
@@ -149,14 +159,9 @@ export function WordConnectGame() {
         )}
       </div>
 
-      {/* Message */}
       {message.text && (
         <div
-          className={`rounded-2xl px-4 py-2.5 text-center text-sm font-bold pop-in border ${
-            message.type === "success"
-              ? "border-green-400/40 text-green-300"
-              : "border-red-400/40 text-red-300"
-          }`}
+          className={`rounded-2xl px-4 py-2.5 text-center text-sm font-bold pop-in border ${message.type === "success" ? "border-green-400/40 text-green-300" : "border-red-400/40 text-red-300"}`}
           style={{
             background:
               message.type === "success"
@@ -169,7 +174,6 @@ export function WordConnectGame() {
         </div>
       )}
 
-      {/* Letter tiles */}
       <div className="flex flex-wrap justify-center gap-3 py-2">
         {level.letters.map((letter, idx) => {
           const isSelected = selectedLetters.includes(idx);
@@ -180,11 +184,7 @@ export function WordConnectGame() {
               key={`letter-${idx}-${letter}`}
               data-ocid={`word_connect.letter.button.${idx + 1}`}
               onClick={() => handleLetterClick(idx)}
-              className={`w-14 h-14 rounded-2xl font-black text-xl transition-all active:scale-90 border ${
-                isSelected
-                  ? "text-white scale-105 border-cyan-400/70"
-                  : "text-white border-white/20"
-              }`}
+              className={`w-14 h-14 rounded-2xl font-black text-xl transition-all active:scale-90 border ${isSelected ? "text-white scale-105 border-cyan-400/70" : "text-white border-white/20"}`}
               style={
                 isSelected
                   ? {
@@ -209,7 +209,6 @@ export function WordConnectGame() {
         })}
       </div>
 
-      {/* Action buttons */}
       <div className="flex gap-3">
         <button
           type="button"
@@ -239,7 +238,6 @@ export function WordConnectGame() {
         </button>
       </div>
 
-      {/* Target words */}
       <div
         className="rounded-3xl p-4 border border-white/10"
         style={{
@@ -258,11 +256,7 @@ export function WordConnectGame() {
             return (
               <span
                 key={word}
-                className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-all border ${
-                  found
-                    ? "border-green-400/40 text-green-300 line-through"
-                    : "border-white/15 text-white/40"
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-all border ${found ? "border-green-400/40 text-green-300 line-through" : "border-white/15 text-white/40"}`}
                 style={{
                   background: found
                     ? "linear-gradient(135deg, rgba(22,101,52,0.4), rgba(21,128,61,0.2))"
@@ -276,53 +270,29 @@ export function WordConnectGame() {
         </div>
       </div>
 
-      {/* Level complete */}
-      {allFound && (
-        <div
-          className="rounded-3xl p-5 text-center pop-in border border-green-400/30"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(22,101,52,0.5), rgba(21,128,61,0.3))",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 0 20px rgba(34,197,94,0.2)",
-          }}
-        >
-          <div className="text-4xl mb-2">🎉</div>
-          <h3 className="text-lg font-black text-green-300 mb-1">
-            {t.levelComplete}
-          </h3>
-          <p className="text-sm text-green-200/70 mb-4">
-            {language === "en"
-              ? `Found all ${level.words.length} words!`
-              : `${level.words.length} ಪದಗಳನ್ನು ಕಂಡಿದ್ದೀರಿ!`}
-          </p>
-          {levelIdx < wordConnectLevels.length - 1 ? (
-            <button
-              type="button"
-              onClick={handleNextLevel}
-              className="w-full py-3 text-white font-bold rounded-2xl active:scale-95"
-              style={{
-                background: "linear-gradient(135deg, #00bcd4, #2196f3)",
-                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
-              }}
-            >
-              {t.next} Level →
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => navigate("home")}
-              className="w-full py-3 text-white font-bold rounded-2xl active:scale-95"
-              style={{
-                background: "linear-gradient(135deg, #00bcd4, #2196f3)",
-                boxShadow: "0 0 16px rgba(0,229,255,0.3)",
-              }}
-            >
-              🏠 {t.home}
-            </button>
-          )}
-        </div>
-      )}
+      <GameResultModal
+        isOpen={showResult}
+        score={foundWords.length}
+        maxScore={level.words.length}
+        coinsEarned={reward.coins}
+        xpEarned={reward.xp}
+        gameName={t.wordConnect}
+        onRetry={() => {
+          setFoundWords([]);
+          setSelectedLetters([]);
+          setAttempts(0);
+          setShowResult(false);
+          setReward({ coins: 0, xp: 0 });
+        }}
+        onExit={() => {
+          incrementGamesPlayed();
+          navigate("home");
+        }}
+        onWatchAdRetry={() => {
+          watchAd();
+          handleNextLevel();
+        }}
+      />
     </div>
   );
 }

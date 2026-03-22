@@ -6,6 +6,7 @@ import { HomeScreen } from "./components/HomeScreen";
 import { InterstitialAd } from "./components/InterstitialAd";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { QuizGame } from "./components/QuizGame";
+import { ShopScreen } from "./components/ShopScreen";
 import { SpeedChallengeGame } from "./components/SpeedChallengeGame";
 import { SpinAndWin } from "./components/SpinAndWin";
 import { SplashScreen } from "./components/SplashScreen";
@@ -47,6 +48,8 @@ function AppInner() {
         return <LeaderboardScreen />;
       case "dailyChallenges":
         return <DailyChallengesScreen />;
+      case "shop":
+        return <ShopScreen />;
       default:
         return <HomeScreen />;
     }

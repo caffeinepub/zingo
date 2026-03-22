@@ -13,7 +13,7 @@ const LANGUAGES: { code: Lang; label: string; short: string; flag: string }[] =
   ];
 
 export function TopBar() {
-  const { coins, xp, rank, language, setLanguage } = useGame();
+  const { coins, xp, rank, level, language, setLanguage } = useGame();
   const t = translations[language];
   const prevCoins = useRef(coins);
   const [coinPulse, setCoinPulse] = useState(false);
@@ -21,10 +21,9 @@ export function TopBar() {
 
   const xpForRank: Record<string, { min: number; max: number }> = {
     Beginner: { min: 0, max: 500 },
-    Player: { min: 500, max: 1500 },
+    Intermediate: { min: 500, max: 1500 },
     Pro: { min: 1500, max: 3000 },
-    Champion: { min: 3000, max: 6000 },
-    Legend: { min: 6000, max: 10000 },
+    Master: { min: 3000, max: 6000 },
   };
   const rankBounds = xpForRank[rank] || { min: 0, max: 500 };
   const xpProgress = Math.min(
@@ -33,11 +32,10 @@ export function TopBar() {
   );
 
   const rankLabels: Record<string, string> = {
-    Beginner: t.beginner,
-    Player: t.playerRank,
-    Pro: t.pro,
-    Champion: t.champion,
-    Legend: t.legend,
+    Beginner: t.beginner || "Beginner",
+    Intermediate: "Intermediate",
+    Pro: t.pro || "Pro",
+    Master: "Master",
   };
 
   useEffect(() => {
@@ -76,12 +74,24 @@ export function TopBar() {
       {/* XP Bar center */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <span
-            className="text-xs font-bold truncate"
-            style={{ color: "#00e5ff" }}
-          >
-            {rankLabels[rank] || rank}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="text-xs font-bold truncate"
+              style={{ color: "#00e5ff" }}
+            >
+              {rankLabels[rank] || rank}
+            </span>
+            <span
+              className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
+              style={{
+                background: "rgba(0,229,255,0.15)",
+                border: "1px solid rgba(0,229,255,0.3)",
+                color: "#00e5ff",
+              }}
+            >
+              Lv.{level}
+            </span>
+          </div>
           <span className="text-xs ml-1" style={{ color: "#5a7490" }}>
             {xp} {t.xp}
           </span>
@@ -147,13 +157,11 @@ export function TopBar() {
       {/* Language Dropdown */}
       {showLangPicker && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-30"
             onClick={() => setShowLangPicker(false)}
             onKeyDown={(e) => e.key === "Escape" && setShowLangPicker(false)}
           />
-          {/* Dropdown panel */}
           <div
             data-ocid="home.language_dropdown"
             className="absolute top-full right-0 mt-2 z-40 rounded-2xl overflow-hidden min-w-[160px]"
@@ -176,13 +184,8 @@ export function TopBar() {
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors text-left"
                 style={
                   language === lang.code
-                    ? {
-                        background: "rgba(0,229,255,0.1)",
-                        color: "#00e5ff",
-                      }
-                    : {
-                        color: "#e2eaf4",
-                      }
+                    ? { background: "rgba(0,229,255,0.1)", color: "#00e5ff" }
+                    : { color: "#e2eaf4" }
                 }
               >
                 <span className="text-base">{lang.flag}</span>
